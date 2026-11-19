@@ -201,6 +201,7 @@ class StudentProblemState(Base):
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
+        onupdate=func.now()
     )
 
     student: Mapped[Student] = relationship(back_populates="student_problem_states")

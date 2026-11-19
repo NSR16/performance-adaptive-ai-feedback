@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     JAVA_CLASS_NAME: str = "Main"
     JAVA_COMPILATION_TIMEOUT_SECONDS: float = Field(default=10.0, gt=0)
     JAVA_EXECUTION_TIMEOUT_SECONDS: float = Field(default=2.0, gt=0)
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "qwen2.5:3b"
+    OLLAMA_TIMEOUT: float = Field(default=60.0, gt=0)
 
     model_config = SettingsConfigDict(
         env_file=".env",
