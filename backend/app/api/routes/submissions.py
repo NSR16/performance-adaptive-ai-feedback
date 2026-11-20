@@ -3,7 +3,12 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.orm import Submission
-from app.schemas.submissions import SubmissionCreate, SubmissionDetail, SubmissionResponse
+from app.schemas.submissions import (
+    SubmissionCreate,
+    SubmissionDetail,
+    SubmissionResponse,
+    SubmissionTestCaseResult,
+)
 from app.services.submissions import SubmissionWorkflow, SubmissionWorkflowError
 
 router = APIRouter(tags=["submissions"])
@@ -43,6 +48,24 @@ def get_submission(
     evaluation = submission.evaluation_result
     adaptive = submission.adaptive_decision
     feedback = submission.feedback
+    test_case_results = (
+        [
+            SubmissionTestCaseResult(
+                sequence_order=result.test_case.sequence_order,
+                status=result.status,
+                execution_time_ms=result.execution_time_ms,
+            )
+            for result in sorted(
+                evaluation.test_case_results,
+                key=lambda item: (
+                    item.test_case.sequence_order,
+                    item.test_case_id,
+                ),
+            )
+        ]
+        if evaluation
+        else []
+    )
     return SubmissionDetail(
         submission_id=submission.id,
         student_id=submission.student_id,
@@ -60,4 +83,5 @@ def get_submission(
         feedback_generation_status=feedback.generation_status if feedback else None,
         feedback_error_message=feedback.error_message if feedback else None,
         model_name=feedback.model_name if feedback else None,
+        test_case_results=test_case_results,
     )

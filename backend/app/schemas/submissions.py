@@ -5,11 +5,18 @@ from decimal import Decimal
 
 from pydantic import BaseModel, Field
 
+from app.services.evaluation.schemas import TestCaseStatus
+
 
 class SubmissionCreate(BaseModel):
     student_id: int = Field(gt=0)
     problem_id: int = Field(gt=0)
     source_code: str = Field(min_length=1, max_length=50000)
+
+
+class StudentSummary(BaseModel):
+    id: int
+    display_name: str
 
 
 class ProblemSummary(BaseModel):
@@ -35,6 +42,12 @@ class ProblemDetail(BaseModel):
     hidden_test_case_count: int
 
 
+class SubmissionTestCaseResult(BaseModel):
+    sequence_order: int
+    status: TestCaseStatus
+    execution_time_ms: int | None
+
+
 class SubmissionResponse(BaseModel):
     submission_id: int
     evaluation_status: str
@@ -47,6 +60,7 @@ class SubmissionResponse(BaseModel):
     generation_status: str
     model_name: str | None = None
     error_message: str | None = None
+    test_case_results: list[SubmissionTestCaseResult]
 
 
 class SubmissionDetail(BaseModel):
@@ -66,6 +80,7 @@ class SubmissionDetail(BaseModel):
     feedback_generation_status: str | None
     feedback_error_message: str | None
     model_name: str | None
+    test_case_results: list[SubmissionTestCaseResult]
 
 
 class HistoryItem(BaseModel):

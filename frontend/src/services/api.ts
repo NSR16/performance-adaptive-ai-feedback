@@ -2,6 +2,7 @@ import type {
   HistoryItem,
   ProblemDetail,
   ProblemSummary,
+  StudentSummary,
   SubmissionCreate,
   SubmissionDetail,
   SubmissionResponse,
@@ -75,6 +76,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function getProblems(): Promise<ProblemSummary[]> {
   return request<ProblemSummary[]>('/api/problems')
+}
+
+export function getStudents(): Promise<StudentSummary[]> {
+  return request<StudentSummary[]>('/api/students')
 }
 
 export function getProblem(problemId: number): Promise<ProblemDetail> {

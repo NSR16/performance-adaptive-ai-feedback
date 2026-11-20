@@ -18,6 +18,8 @@ from app.services.feedback import OllamaFeedbackGenerator, build_feedback_prompt
 def _evaluation(
     *,
     status: str = "WRONG_ANSWER",
+    passed_tests: int = 1,
+    total_tests: int = 2,
     score: str | None = "50.00",
     compilation_error: str | None = None,
     runtime_error: str | None = None,
@@ -25,8 +27,8 @@ def _evaluation(
 ) -> EvaluationResult:
     return EvaluationResult(
         status=status,  # type: ignore[arg-type]
-        passed_tests=1,
-        total_tests=2,
+        passed_tests=passed_tests,
+        total_tests=total_tests,
         score=Decimal(score) if score is not None else None,
         execution_time_ms=12,
         compilation_error=compilation_error,
@@ -42,9 +44,9 @@ def _settings(**overrides: Any) -> Settings:
 @pytest.mark.parametrize(
     ("level", "expected_guidance"),
     [
-        (AssistanceLevel.HIGH, "step-by-step debugging guidance"),
-        (AssistanceLevel.MODERATE, "targeted hints"),
-        (AssistanceLevel.LOW, "one small conceptual hint"),
+        (AssistanceLevel.HIGH, "clearly diagnose a concrete issue"),
+        (AssistanceLevel.MODERATE, "give a targeted hint"),
+        (AssistanceLevel.LOW, "Socratic questions"),
     ],
 )
 def test_prompt_varies_by_assistance_level(
@@ -56,9 +58,104 @@ def test_prompt_varies_by_assistance_level(
     assert f"Assistance level: {level.value}" in prompt
     assert expected_guidance in prompt
     if level is not AssistanceLevel.HIGH:
-        assert "Do not provide the complete solution." in prompt or (
-            "Never reveal or write the complete solution." in prompt
-        )
+        assert "complete solution" in prompt
+
+
+def test_low_guidance_is_conceptual_and_withholds_direct_correction() -> None:
+    prompt = build_feedback_prompt(
+        "Compute the sum of two values.",
+        "public class Main {}",
+        _evaluation(),
+        AssistanceLevel.LOW,
+    )
+    guidance = prompt.split("Guidance: ", 1)[1].split(
+        "\n\nSupplied material", 1
+    )[0]
+
+    assert "conceptual hints and Socratic questions" in guidance
+    assert "encourage independent debugging" in guidance
+    assert "Do not identify the exact correction or replacement." in guidance
+    assert "Never provide corrected code or a complete solution." in guidance
+    assert "provide the exact correction" not in guidance
+
+
+def test_moderate_guidance_explains_the_issue_without_the_exact_replacement() -> None:
+    prompt = build_feedback_prompt(
+        "Compute the sum of two values.",
+        "public class Main {}",
+        _evaluation(),
+        AssistanceLevel.MODERATE,
+    )
+    guidance = prompt.split("Guidance: ", 1)[1].split(
+        "\n\nSupplied material", 1
+    )[0]
+
+    assert "identify only the relevant error or problematic concept" in guidance
+    assert "Explain why it is incorrect" in guidance
+    assert "give a targeted hint about what to reconsider" in guidance
+    assert "Do not provide the exact replacement expression" in guidance
+    assert "corrected code, or complete solution" in guidance
+
+
+def test_high_guidance_allows_grounded_direct_correction_and_code() -> None:
+    prompt = build_feedback_prompt(
+        "Compute the sum of two values.",
+        "public class Main {}",
+        _evaluation(),
+        AssistanceLevel.HIGH,
+    )
+    guidance = prompt.split("Guidance: ", 1)[1].split(
+        "\n\nSupplied material", 1
+    )[0]
+
+    assert "clearly diagnose a concrete issue" in guidance
+    assert "Explain why it occurs" in guidance
+    assert "Provide the exact correction" in guidance
+    assert "corrected code or an implementation when useful" in guidance
+    assert "explain why the correction works" in guidance
+    assert "instead of guessing" in guidance
+
+
+def test_high_compilation_fix_preserves_the_complete_sum_task() -> None:
+    problem = "Read two integers from standard input and print their sum."
+    source_code = """import java.util.Scanner;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        int a = sc.nextInt();
+        System.out.println(a);
+    }
+}"""
+    diagnostic = "cannot find symbol: variable sc"
+
+    prompt = build_feedback_prompt(
+        problem,
+        source_code,
+        _evaluation(
+            status="COMPILATION_ERROR",
+            passed_tests=0,
+            total_tests=0,
+            score=None,
+            compilation_error=diagnostic,
+        ),
+        AssistanceLevel.HIGH,
+    )
+    guidance = prompt.split("Guidance: ", 1)[1].split(
+        "\n\nSupplied material", 1
+    )[0]
+
+    assert problem in prompt
+    assert "int a = sc.nextInt();" in prompt
+    assert "Scanner scanner = new Scanner(System.in);" in prompt
+    assert diagnostic in prompt
+    assert "Correct all identified issues." in guidance
+    assert "Treat the complete original problem description as mandatory acceptance criteria" in guidance
+    assert "preserve every functional requirement" in guidance
+    assert "use all required inputs, perform the requested computation, and produce the required output" in guidance
+    assert "Never simplify away required functionality." in guidance
+    assert "do not add requirements that are not stated there" in guidance
+    assert "correct the reference to that declared name rather than inventing a parallel declaration" in guidance
 
 
 def test_prompt_contains_only_safe_aggregate_evaluation_information() -> None:
@@ -92,8 +189,49 @@ def test_prompt_contains_only_safe_aggregate_evaluation_information() -> None:
     assert "hidden actual output" not in prompt
     assert "hidden case diagnostic" not in prompt
     assert "987" not in prompt
-    assert "Never invent compiler messages, failed test cases, expected outputs" in prompt
-    assert "label code-based explanations as hypotheses" in prompt
+    assert "Do not invent bugs, defects, causes, compiler messages" in prompt
+    assert "Do not speculate about unverified defects" in prompt
+
+
+def test_accepted_prompt_forbids_error_and_bug_claims() -> None:
+    prompt = build_feedback_prompt(
+        "Read two integers and print their sum.",
+        "public class Main { /* working solution */ }",
+        _evaluation(
+            status="ACCEPTED",
+            passed_tests=2,
+            total_tests=2,
+            score="100.00",
+        ),
+        AssistanceLevel.HIGH,
+    )
+
+    assert '"status": "ACCEPTED"' in prompt
+    assert '"passed_tests": 2' in prompt
+    assert '"total_tests": 2' in prompt
+    assert "never describe or imply an error, bug, defect, failure, or required fix" in prompt
+    assert "acknowledge correctness" in prompt
+    assert "optional and grounded in the problem or code" in prompt
+
+
+def test_runtime_error_prompt_does_not_claim_or_expose_an_unverified_cause() -> None:
+    prompt = build_feedback_prompt(
+        "Print the sum of two integers.",
+        "public class Main { /* student source */ }",
+        _evaluation(
+            status="RUNTIME_ERROR",
+            runtime_error="private runtime diagnostic",
+        ),
+        AssistanceLevel.MODERATE,
+    )
+
+    assert '"status": "RUNTIME_ERROR"' in prompt
+    assert '"runtime_error_occurred": true' in prompt
+    assert "raw diagnostic and test-case details are withheld" in prompt
+    assert "do not call it a compilation error" in prompt
+    assert '"compilation_error": null' in prompt
+    assert "Do not speculate about unverified defects" in prompt
+    assert "private runtime diagnostic" not in prompt
 
 
 def test_prompt_includes_verified_compilation_error_but_not_unrelated_runtime_text() -> None:

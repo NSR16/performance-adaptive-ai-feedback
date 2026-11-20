@@ -73,6 +73,36 @@ export function SubmissionPanels({ result }: SubmissionPanelsProps) {
             <dd>{result.selected_assistance_level ?? 'Not available'}</dd>
           </div>
         </dl>
+        <section className="case-results" aria-labelledby="case-results-title">
+          <div className="case-results-heading">
+            <h4 id="case-results-title">Test case results</h4>
+            <span>{result.test_case_results.length} cases</span>
+          </div>
+          {result.test_case_results.length > 0 ? (
+            <ol className="case-results-list">
+              {result.test_case_results.map((testCase) => (
+                <li
+                  className="case-result"
+                  key={testCase.sequence_order}
+                >
+                  <strong>Test {testCase.sequence_order}</strong>
+                  <span className={`case-status status-${testCase.status.toLowerCase()}`}>
+                    {testCase.status.replaceAll('_', ' ')}
+                  </span>
+                  <span className="case-execution-time">
+                    {testCase.execution_time_ms === null
+                      ? 'Time unavailable'
+                      : `${testCase.execution_time_ms} ms`}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="status-message">
+              Individual test results are not available.
+            </p>
+          )}
+        </section>
       </section>
 
       <section className="feedback-panel" aria-labelledby="feedback-title">

@@ -4,9 +4,18 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.orm import Problem, Student, Submission
-from app.schemas.submissions import HistoryItem
+from app.schemas.submissions import HistoryItem, StudentSummary
 
 router = APIRouter(tags=["students"])
+
+
+@router.get("/api/students", response_model=list[StudentSummary])
+def list_students(db: Session = Depends(get_db)) -> list[StudentSummary]:
+    students = db.execute(select(Student).order_by(Student.id.asc())).scalars().all()
+    return [
+        StudentSummary(id=student.id, display_name=student.display_name)
+        for student in students
+    ]
 
 
 @router.get(

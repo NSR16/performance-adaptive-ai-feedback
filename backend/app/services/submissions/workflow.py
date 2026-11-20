@@ -103,6 +103,10 @@ class SubmissionWorkflow:
             )
             for test_case in test_cases
         ]
+        sequence_by_test_case_id = {
+            test_case.id: test_case.sequence_order
+            for test_case in test_cases
+        }
 
         try:
             import asyncio
@@ -252,6 +256,17 @@ class SubmissionWorkflow:
             "generation_status": feedback_record.generation_status,
             "model_name": feedback_record.model_name,
             "error_message": feedback_record.error_message,
+            "test_case_results": [
+                {
+                    "sequence_order": sequence_by_test_case_id[result.test_case_id],
+                    "status": result.status,
+                    "execution_time_ms": result.execution_time_ms,
+                }
+                for result in sorted(
+                    evaluation.test_case_results,
+                    key=lambda item: sequence_by_test_case_id[item.test_case_id],
+                )
+            ],
         }
 
     def _get_previous_evaluated_submission(

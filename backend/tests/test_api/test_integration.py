@@ -20,6 +20,7 @@ from app.services.evaluation.schemas import (
 from app.services.feedback import FeedbackGenerationResult
 from app.services.submissions import SubmissionWorkflow
 from app.api.routes.submissions import get_submission_workflow
+from scripts.seed_demo import seed_demo_data
 
 
 @compiles(BigInteger, "sqlite")
@@ -191,6 +192,37 @@ def test_health_and_problem_retrieval(api_database) -> None:
     assert "35" in str(detail.json())
 
 
+def test_student_list_returns_only_frontend_fields(api_database) -> None:
+    client, TestingSession = api_database
+    with TestingSession() as db:
+        db.add(Student(id=2, display_name="Second Demo Student"))
+        db.commit()
+
+    response = client.get("/api/students")
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {"id": 1, "display_name": "Demo Student"},
+        {"id": 2, "display_name": "Second Demo Student"},
+    ]
+
+
+def test_demo_seed_is_idempotent_and_creates_three_students(api_database) -> None:
+    _, TestingSession = api_database
+
+    with TestingSession() as db:
+        seed_demo_data(db)
+        seed_demo_data(db)
+
+        students = db.query(Student).order_by(Student.id).all()
+
+    assert [student.display_name for student in students] == [
+        "Demo Student",
+        "Demo Student 2",
+        "Demo Student 3",
+    ]
+
+
 def test_invalid_submission_requests(api_database) -> None:
     client, _ = api_database
 
@@ -249,6 +281,23 @@ def test_first_submission_is_baseline_and_persists_data(api_database) -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["submission_id"] > 0
+    assert body["test_case_results"] == [
+        {
+            "sequence_order": 1,
+            "status": "PASSED",
+            "execution_time_ms": None,
+        },
+        {
+            "sequence_order": 2,
+            "status": "WRONG_ANSWER",
+            "execution_time_ms": None,
+        },
+        {
+            "sequence_order": 3,
+            "status": "WRONG_ANSWER",
+            "execution_time_ms": None,
+        },
+    ]
     assert body["progress_classification"] is None
     assert body["selected_assistance_level"] == "MODERATE"
     assert body["feedback_text"] == "Mock grounded hint"
@@ -258,6 +307,11 @@ def test_first_submission_is_baseline_and_persists_data(api_database) -> None:
     assert detail.status_code == 200
     assert detail.json()["progress_classification"] is None
     assert detail.json()["feedback_generation_status"] == "SUCCEEDED"
+    assert detail.json()["test_case_results"] == body["test_case_results"]
+    assert all(
+        set(test_case) == {"sequence_order", "status", "execution_time_ms"}
+        for test_case in detail.json()["test_case_results"]
+    )
 
     from app.models.orm import Feedback, StudentProblemState
 
@@ -296,6 +350,42 @@ def test_second_submission_improves_then_fsm_reduces_assistance(api_database) ->
         state = db.query(StudentProblemState).one()
         assert state.consecutive_improvements == 2
         assert state.current_assistance == "LOW"
+
+
+def test_student_history_and_adaptive_state_are_isolated(api_database) -> None:
+    client, TestingSession = api_database
+    with TestingSession() as db:
+        db.add(Student(id=2, display_name="Second Demo Student"))
+        db.commit()
+
+    for score in ("score40", "score65", "score85"):
+        response = client.post(
+            "/api/submissions",
+            json={"student_id": 1, "problem_id": 1, "source_code": score},
+        )
+        assert response.status_code == 200
+    second_student_response = client.post(
+        "/api/submissions",
+        json={"student_id": 2, "problem_id": 1, "source_code": "score65"},
+    )
+
+    assert second_student_response.status_code == 200
+    assert second_student_response.json()["progress_classification"] is None
+    assert second_student_response.json()["selected_assistance_level"] == "MODERATE"
+    assert len(client.get("/api/students/1/problems/1/history").json()) == 3
+    assert len(client.get("/api/students/2/problems/1/history").json()) == 1
+
+    from app.models.orm import StudentProblemState
+
+    with TestingSession() as db:
+        states = {
+            state.student_id: state
+            for state in db.query(StudentProblemState).all()
+        }
+    assert states[1].current_assistance == "LOW"
+    assert states[1].consecutive_improvements == 2
+    assert states[2].current_assistance == "MODERATE"
+    assert states[2].consecutive_improvements == 0
 
 
 def test_ollama_failure_preserves_evaluation_and_adaptive_data(api_database) -> None:

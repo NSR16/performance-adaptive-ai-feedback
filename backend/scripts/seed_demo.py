@@ -7,11 +7,24 @@ from app.models.orm import Problem, Student, TestCase
 
 
 def seed_demo_data(db: Session) -> None:
-    student = db.query(Student).filter(Student.display_name == "Demo Student").first()
-    if student is None:
-        student = Student(display_name="Demo Student")
-        db.add(student)
-        db.flush()
+    demo_student_names = (
+        "Demo Student",
+        "Demo Student 2",
+        "Demo Student 3",
+    )
+    existing_students = {
+        student.display_name: student
+        for student in db.query(Student)
+        .filter(Student.display_name.in_(demo_student_names))
+        .all()
+    }
+    for display_name in demo_student_names:
+        if display_name not in existing_students:
+            student = Student(display_name=display_name)
+            db.add(student)
+            existing_students[display_name] = student
+    db.flush()
+    student = existing_students["Demo Student"]
 
     problem = db.query(Problem).filter(
         Problem.title == "Demo: Sum Two Integers"

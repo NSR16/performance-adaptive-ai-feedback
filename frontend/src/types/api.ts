@@ -4,6 +4,11 @@ export interface ProblemSummary {
   difficulty: string
 }
 
+export interface StudentSummary {
+  id: number
+  display_name: string
+}
+
 export interface PublicTestCase {
   id: number
   input_data: string
@@ -27,6 +32,19 @@ export interface SubmissionCreate {
   source_code: string
 }
 
+export type TestCaseResultStatus =
+  | 'PASSED'
+  | 'WRONG_ANSWER'
+  | 'RUNTIME_ERROR'
+  | 'TIME_LIMIT_EXCEEDED'
+  | 'NOT_RUN'
+
+export interface SubmissionTestCaseResult {
+  sequence_order: number
+  status: TestCaseResultStatus
+  execution_time_ms: number | null
+}
+
 export interface SubmissionResponse {
   submission_id: number
   evaluation_status: string
@@ -39,6 +57,7 @@ export interface SubmissionResponse {
   generation_status: string
   model_name: string | null
   error_message: string | null
+  test_case_results: SubmissionTestCaseResult[]
 }
 
 export interface SubmissionDetail {
@@ -58,6 +77,7 @@ export interface SubmissionDetail {
   feedback_generation_status: string | null
   feedback_error_message: string | null
   model_name: string | null
+  test_case_results: SubmissionTestCaseResult[]
 }
 
 export interface HistoryItem {

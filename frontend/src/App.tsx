@@ -4,22 +4,23 @@ import { CodingEditor } from './components/CodingEditor'
 import { ProblemPanel } from './components/ProblemPanel'
 import { SubmissionHistory } from './components/SubmissionHistory'
 import { SubmissionPanels } from './components/SubmissionPanels'
+import { StudentSelector } from './components/StudentSelector'
 import {
   ApiHttpError,
   ApiNetworkError,
   ApiResponseError,
   getProblem,
   getProblems,
+  getStudents,
   submitSolution,
 } from './services/api'
 import type {
   ProblemDetail,
   ProblemSummary,
+  StudentSummary,
   SubmissionResponse,
 } from './types/api'
 import './App.css'
-
-const DEMO_STUDENT_ID = 1
 
 function describeError(error: unknown): string {
   if (error instanceof ApiHttpError) {
@@ -38,6 +39,11 @@ function describeError(error: unknown): string {
 }
 
 function App() {
+  const [students, setStudents] = useState<StudentSummary[]>([])
+  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null)
+  const [studentsLoading, setStudentsLoading] = useState(true)
+  const [studentsError, setStudentsError] = useState<string | null>(null)
+  const [studentRetryCount, setStudentRetryCount] = useState(0)
   const [problems, setProblems] = useState<ProblemSummary[]>([])
   const [selectedProblemId, setSelectedProblemId] = useState<number | null>(null)
   const [selectedProblem, setSelectedProblem] = useState<ProblemDetail | null>(null)
@@ -53,6 +59,42 @@ function App() {
     useState<SubmissionResponse | null>(null)
   const [historyRefreshCount, setHistoryRefreshCount] = useState(0)
   const submissionInFlight = useRef(false)
+  const [activeView, setActiveView] = useState<'workspace' | 'history'>(
+    'workspace',
+  )
+
+  useEffect(() => {
+    let active = true
+    setStudentsLoading(true)
+    setStudentsError(null)
+
+    getStudents()
+      .then((items) => {
+        if (!active) {
+          return
+        }
+        setStudents(items)
+        setSelectedStudentId((currentId) =>
+          items.some((student) => student.id === currentId)
+            ? currentId
+            : (items[0]?.id ?? null),
+        )
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          setStudentsError(describeError(error))
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setStudentsLoading(false)
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [studentRetryCount])
 
   useEffect(() => {
     let active = true
@@ -122,7 +164,27 @@ function App() {
   }, [selectedProblemId])
 
   function handleProblemChange(problemId: number) {
+    if (problemId === selectedProblemId || submissionInFlight.current) {
+      return
+    }
+
     setSelectedProblemId(problemId)
+    setSourceCode('')
+    setSubmissionResult(null)
+    setSubmissionError(null)
+  }
+
+  function handleStudentChange(studentId: number) {
+    if (studentId === selectedStudentId || submissionInFlight.current) {
+      return
+    }
+
+    setSelectedStudentId(studentId)
+    setSourceCode(
+      selectedProblem?.id === selectedProblemId
+        ? (selectedProblem.starter_code ?? '')
+        : '',
+    )
     setSubmissionResult(null)
     setSubmissionError(null)
   }
@@ -130,6 +192,7 @@ function App() {
   async function handleSubmit() {
     if (
       !selectedProblem ||
+      selectedStudentId === null ||
       submissionInFlight.current ||
       sourceCode.trim().length === 0
     ) {
@@ -143,7 +206,7 @@ function App() {
 
     try {
       const result = await submitSolution({
-        student_id: DEMO_STUDENT_ID,
+        student_id: selectedStudentId,
         problem_id: selectedProblem.id,
         source_code: sourceCode,
       })
@@ -167,82 +230,180 @@ function App() {
           <p className="eyebrow">Research workspace</p>
           <h1>Performance-Adaptive AI Feedback</h1>
         </div>
+        <div className="header-student">
+          <span className="eyebrow">Student</span>
+          {studentsLoading ? (
+            <span className="header-status" role="status">
+              Loading…
+            </span>
+          ) : studentsError ? (
+            <div className="student-load-error" role="alert">
+              <span>Could not load students.</span>
+              <button
+                className="text-button"
+                onClick={() => setStudentRetryCount((count) => count + 1)}
+                type="button"
+              >
+                Retry
+              </button>
+            </div>
+          ) : students.length > 0 ? (
+            <StudentSelector
+              students={students}
+              selectedStudentId={selectedStudentId}
+              onChange={handleStudentChange}
+              disabled={isSubmitting}
+            />
+          ) : (
+            <span className="header-status">No students available</span>
+          )}
+        </div>
       </header>
 
       <main className="workspace">
-        <div className="workspace-heading">
-          <div>
-            <p className="eyebrow">Independent problem-solving</p>
-            <h2>Practice workspace</h2>
-          </div>
-          <div className="problem-picker">
-            <span className="eyebrow">Problem</span>
-            {problemsLoading ? (
-              <span className="status-message" role="status">
-                Loading problems…
-              </span>
-            ) : problemsError ? (
-              <div className="problem-load-error" role="alert">
-                <span>{problemsError}</span>
-                <button
-                  className="text-button"
-                  onClick={() => setRetryCount((count) => count + 1)}
-                  type="button"
-                >
-                  Retry
-                </button>
+        <nav className="view-tabs" role="tablist" aria-label="Workspace views">
+          <button
+            aria-selected={activeView === 'workspace'}
+            className={`view-tab${activeView === 'workspace' ? ' active' : ''}`}
+            onClick={() => setActiveView('workspace')}
+            role="tab"
+            type="button"
+          >
+            Workspace
+          </button>
+          <button
+            aria-selected={activeView === 'history'}
+            className={`view-tab${activeView === 'history' ? ' active' : ''}`}
+            onClick={() => setActiveView('history')}
+            role="tab"
+            type="button"
+          >
+            Submission History
+          </button>
+        </nav>
+
+        {activeView === 'workspace' ? (
+          <section
+            aria-labelledby="workspace-title"
+            className="workspace-view"
+            role="tabpanel"
+          >
+            <div className="workspace-heading">
+              <div>
+                <p className="eyebrow">Independent problem-solving</p>
+                <h2 id="workspace-title">Practice workspace</h2>
               </div>
-            ) : problems.length > 0 ? (
-              <ProblemSelector
-                problems={problems}
-                selectedProblemId={selectedProblemId}
-                onChange={handleProblemChange}
-                disabled={isSubmitting}
+              <div className="problem-picker">
+                <span className="eyebrow">Problem</span>
+                {problemsLoading ? (
+                  <span className="status-message" role="status">
+                    Loading problems…
+                  </span>
+                ) : problemsError ? (
+                  <div className="problem-load-error" role="alert">
+                    <span>{problemsError}</span>
+                    <button
+                      className="text-button"
+                      onClick={() => setRetryCount((count) => count + 1)}
+                      type="button"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : problems.length > 0 ? (
+                  <ProblemSelector
+                    problems={problems}
+                    selectedProblemId={selectedProblemId}
+                    onChange={handleProblemChange}
+                    disabled={isSubmitting}
+                  />
+                ) : (
+                  <span className="status-message">No problems available</span>
+                )}
+              </div>
+            </div>
+
+            <div className="workspace-grid">
+              <ProblemPanel
+                problem={selectedProblem}
+                loading={problemLoading}
+                error={problemError}
+              />
+
+              <div className="editor-column">
+                <CodingEditor
+                  sourceCode={sourceCode}
+                  onSourceCodeChange={setSourceCode}
+                  onSubmit={handleSubmit}
+                  submitting={isSubmitting}
+                  disabled={
+                    !selectedProblem || problemLoading || selectedStudentId === null
+                  }
+                  hasCode={sourceCode.trim().length > 0}
+                />
+                {submissionError && (
+                  <p className="submission-error" role="alert">
+                    {submissionError}
+                  </p>
+                )}
+                {isSubmitting && (
+                  <p className="submission-progress" role="status">
+                    Submission in progress. The backend is evaluating your code
+                    and generating feedback; this may take a little while.
+                  </p>
+                )}
+                {submissionResult && (
+                  <SubmissionPanels result={submissionResult} />
+                )}
+              </div>
+            </div>
+          </section>
+        ) : (
+          <section
+            aria-labelledby="history-view-title"
+            className="history-view"
+            role="tabpanel"
+          >
+            <div className="history-view-heading">
+              <div>
+                <p className="eyebrow">Selected problem</p>
+                <h2 id="history-view-title">
+                  {problems.find((problem) => problem.id === selectedProblemId)
+                    ?.title ?? 'Submission history'}
+                </h2>
+              </div>
+              <button
+                className="text-button"
+                onClick={() => setActiveView('workspace')}
+                type="button"
+              >
+                Change problem
+              </button>
+            </div>
+            {studentsLoading || problemsLoading ? (
+              <p className="status-message" role="status">
+                Loading student and problem selections…
+              </p>
+            ) : studentsError ? (
+              <p className="error-message" role="alert">
+                {studentsError}
+              </p>
+            ) : problemsError ? (
+              <p className="error-message" role="alert">
+                {problemsError}
+              </p>
+            ) : selectedStudentId !== null && selectedProblemId !== null ? (
+              <SubmissionHistory
+                key={`${selectedStudentId}-${selectedProblemId}-${historyRefreshCount}`}
+                studentId={selectedStudentId}
+                problemId={selectedProblemId}
               />
             ) : (
-              <span className="status-message">No problems available</span>
-            )}
-          </div>
-        </div>
-
-        <div className="workspace-grid">
-          <ProblemPanel
-            problem={selectedProblem}
-            loading={problemLoading}
-            error={problemError}
-          />
-
-          <div className="editor-column">
-            <CodingEditor
-              sourceCode={sourceCode}
-              onSourceCodeChange={setSourceCode}
-              onSubmit={handleSubmit}
-              submitting={isSubmitting}
-              disabled={!selectedProblem || problemLoading}
-              hasCode={sourceCode.trim().length > 0}
-            />
-            {submissionError && (
-              <p className="submission-error" role="alert">
-                {submissionError}
+              <p className="history-no-selection">
+                Select a student and a problem in Workspace to view submissions.
               </p>
             )}
-            {isSubmitting && (
-              <p className="submission-progress" role="status">
-                Submission in progress. The backend is evaluating your code and
-                generating feedback; this may take a little while.
-              </p>
-            )}
-            {submissionResult && (
-              <SubmissionPanels result={submissionResult} />
-            )}
-          </div>
-        </div>
-        {selectedProblemId !== null && (
-          <SubmissionHistory
-            key={`${DEMO_STUDENT_ID}-${selectedProblemId}-${historyRefreshCount}`}
-            studentId={DEMO_STUDENT_ID}
-            problemId={selectedProblemId}
-          />
+          </section>
         )}
       </main>
     </div>
