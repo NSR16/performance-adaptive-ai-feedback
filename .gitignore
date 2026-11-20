@@ -22,3 +22,7 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+
+# Generated historical analysis datasets
+analysis/outputs/reconstructed_attempts.csv
+analysis/outputs/attempt_diagnostics.csv

@@ -1,0 +1,3 @@
+Measure,UnitCount,count,mean,median,std,min,q1,q3,max
+Operational attempts per student,413,413,168.58837772397095,145.0,126.415365834078,1.0,77.0,235.0,1116.0
+Operational attempts per ProblemID,50,50,1392.54,1262.5,639.3292470413418,493.0,979.75,1542.75,3391.0

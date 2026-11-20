@@ -1,0 +1,2 @@
+count,mean,median,std,min,q1,q3,max,attempt_rows,missing_score_rows,standard_deviation_definition,quartile_definition
+69627,0.4216307362431241,0.307692,0.4281047435301455,0.0,0.0,0.923077,1.0,69627,0,sample standard deviation (ddof=1),linear empirical quantiles

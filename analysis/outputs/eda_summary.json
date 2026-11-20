@@ -1,0 +1,333 @@
+{
+  "analysis_validation_checks": {
+    "attempt_position_counts_cover_attempts": true,
+    "baseline_groups_cover_scored_students": true,
+    "compilation_outcomes_cover_attempts": true,
+    "diagnostic_events_match_attempt_diagnostic_counts": true,
+    "problem_attempt_counts_cover_attempts": true,
+    "progress_denominator_and_percentages_are_consistent": true,
+    "score_rows_cover_attempts": true,
+    "student_attempt_counts_cover_attempts": true
+  },
+  "analysis_validation_passed": true,
+  "attempt_count": 69627,
+  "attempt_group_count": 16179,
+  "attempt_position_1": {
+    "AttemptCount": 16179.0,
+    "AttemptNumber": 1.0,
+    "MeanScore": 0.48935935986154894,
+    "MedianScore": 0.466667,
+    "MissingScoreCount": 0.0,
+    "ProblemGroupCount": 16179.0,
+    "ScoreStd": 0.47162483812221045,
+    "ScoredAttemptCount": 16179.0,
+    "StudentCount": 413.0
+  },
+  "attempt_position_10": {
+    "AttemptCount": 1749.0,
+    "AttemptNumber": 10.0,
+    "MeanScore": 0.39502009239565467,
+    "MedianScore": 0.294118,
+    "MissingScoreCount": 0.0,
+    "ProblemGroupCount": 1749.0,
+    "ScoreStd": 0.40031988570980703,
+    "ScoredAttemptCount": 1749.0,
+    "StudentCount": 313.0
+  },
+  "attempt_position_2": {
+    "AttemptCount": 9866.0,
+    "AttemptNumber": 2.0,
+    "MeanScore": 0.40741691270018243,
+    "MedianScore": 0.176471,
+    "MissingScoreCount": 0.0,
+    "ProblemGroupCount": 9866.0,
+    "ScoreStd": 0.4402430740793143,
+    "ScoredAttemptCount": 9866.0,
+    "StudentCount": 409.0
+  },
+  "attempt_position_20": {
+    "AttemptCount": 450.0,
+    "AttemptNumber": 20.0,
+    "MeanScore": 0.3594081095555555,
+    "MedianScore": 0.230769,
+    "MissingScoreCount": 0.0,
+    "ProblemGroupCount": 450.0,
+    "ScoreStd": 0.38310686172356234,
+    "ScoredAttemptCount": 450.0,
+    "StudentCount": 174.0
+  },
+  "attempt_position_count": 93,
+  "attempt_position_last": {
+    "AttemptCount": 1.0,
+    "AttemptNumber": 93.0,
+    "MeanScore": 1.0,
+    "MedianScore": 1.0,
+    "MissingScoreCount": 0.0,
+    "ProblemGroupCount": 1.0,
+    "ScoreStd": null,
+    "ScoredAttemptCount": 1.0,
+    "StudentCount": 1.0
+  },
+  "attempts_per_problem": {
+    "count": 50,
+    "max": 3391.0,
+    "mean": 1392.54,
+    "median": 1262.5,
+    "min": 493.0,
+    "q1": 979.75,
+    "q3": 1542.75,
+    "std": 639.3292470413418
+  },
+  "attempts_per_student": {
+    "count": 413,
+    "max": 1116.0,
+    "mean": 168.58837772397095,
+    "median": 145.0,
+    "min": 1.0,
+    "q1": 77.0,
+    "q3": 235.0,
+    "std": 126.415365834078
+  },
+  "attempts_with_diagnostics": 28058,
+  "compilation_outcomes": {
+    "Error": {
+      "attempt_count": 28058,
+      "attempt_denominator": 69627,
+      "attempt_percent": 40.29758570669424,
+      "diagnostic_event_count": 62316
+    },
+    "Success": {
+      "attempt_count": 41569,
+      "attempt_denominator": 69627,
+      "attempt_percent": 59.702414293305765,
+      "diagnostic_event_count": 0
+    }
+  },
+  "diagnostic_event_count": 62316,
+  "figures": [
+    "score_distribution.png",
+    "compilation_outcomes.png",
+    "score_by_attempt_number.png",
+    "progress_transitions.png",
+    "problem_score_distributions.png",
+    "initial_score_group_progression.png"
+  ],
+  "highest_attempt_count_problems": [
+    {
+      "AttemptCount": 3391,
+      "ProblemID": "13",
+      "StudentCount": 386
+    },
+    {
+      "AttemptCount": 3204,
+      "ProblemID": "102",
+      "StudentCount": 312
+    },
+    {
+      "AttemptCount": 2904,
+      "ProblemID": "101",
+      "StudentCount": 320
+    },
+    {
+      "AttemptCount": 2469,
+      "ProblemID": "40",
+      "StudentCount": 358
+    },
+    {
+      "AttemptCount": 2426,
+      "ProblemID": "38",
+      "StudentCount": 348
+    }
+  ],
+  "initial_score_groups": {
+    "baseline_definition": "Per student, mean of first-attempt scores across that student's student-assignment-problem groups",
+    "baseline_student_count": 413,
+    "baseline_students_with_score": 413,
+    "baseline_students_without_score": 0,
+    "bin_count": 3,
+    "grouping_method": "tertiles of student baseline means using pandas qcut",
+    "groups": [
+      {
+        "InitialScoreGroup": "Low",
+        "LowerBinEdge": 0.0,
+        "LowerEdgeInclusive": true,
+        "MaxStudentBaseline": 0.361413,
+        "MinStudentBaseline": 0.0,
+        "StudentCount": 138,
+        "UpperBinEdge": 0.3618222333333333,
+        "UpperEdgeInclusive": true
+      },
+      {
+        "InitialScoreGroup": "Middle",
+        "LowerBinEdge": 0.3618222333333333,
+        "LowerEdgeInclusive": false,
+        "MaxStudentBaseline": 0.5735307435897435,
+        "MinStudentBaseline": 0.3626407,
+        "StudentCount": 137,
+        "UpperBinEdge": 0.5756712395299144,
+        "UpperEdgeInclusive": true
+      },
+      {
+        "InitialScoreGroup": "High",
+        "LowerBinEdge": 0.5756712395299144,
+        "LowerEdgeInclusive": false,
+        "MaxStudentBaseline": 1.0,
+        "MinStudentBaseline": 0.5767414875,
+        "StudentCount": 138,
+        "UpperBinEdge": 1.0,
+        "UpperEdgeInclusive": true
+      }
+    ],
+    "progression_unit": "Each student contributes one mean score per attempt position, averaged across their problem groups at that position"
+  },
+  "input_reconstruction_validation_passed": true,
+  "maximum_attempt_number": 93,
+  "package_versions": {
+    "matplotlib": "3.11.2",
+    "numpy": "2.1.3",
+    "pandas": "2.2.3"
+  },
+  "problem_count": 50,
+  "problem_score_high_mean": [
+    {
+      "AttemptCount": 493,
+      "MeanScore": 0.6168356997971602,
+      "MedianScore": 1.0,
+      "ProblemID": "57",
+      "StudentCount": 287
+    },
+    {
+      "AttemptCount": 658,
+      "MeanScore": 0.6030395136778116,
+      "MedianScore": 0.8,
+      "ProblemID": "21",
+      "StudentCount": 315
+    },
+    {
+      "AttemptCount": 705,
+      "MeanScore": 0.6010365553191489,
+      "MedianScore": 0.8461540000000001,
+      "ProblemID": "17",
+      "StudentCount": 313
+    },
+    {
+      "AttemptCount": 972,
+      "MeanScore": 0.5974427160493828,
+      "MedianScore": 0.857143,
+      "ProblemID": "20",
+      "StudentCount": 313
+    },
+    {
+      "AttemptCount": 1207,
+      "MeanScore": 0.584684626014913,
+      "MedianScore": 0.714286,
+      "ProblemID": "235",
+      "StudentCount": 370
+    }
+  ],
+  "problem_score_low_mean": [
+    {
+      "AttemptCount": 2253,
+      "MeanScore": 0.22511397150466045,
+      "MedianScore": 0.0,
+      "ProblemID": "32",
+      "StudentCount": 333
+    },
+    {
+      "AttemptCount": 3391,
+      "MeanScore": 0.23313630684163963,
+      "MedianScore": 0.0,
+      "ProblemID": "13",
+      "StudentCount": 386
+    },
+    {
+      "AttemptCount": 2258,
+      "MeanScore": 0.2652663554472985,
+      "MedianScore": 0.0,
+      "ProblemID": "232",
+      "StudentCount": 378
+    },
+    {
+      "AttemptCount": 1820,
+      "MeanScore": 0.2748528258241758,
+      "MedianScore": 0.0,
+      "ProblemID": "43",
+      "StudentCount": 311
+    },
+    {
+      "AttemptCount": 1264,
+      "MeanScore": 0.3143083236550633,
+      "MedianScore": 0.0,
+      "ProblemID": "100",
+      "StudentCount": 324
+    }
+  ],
+  "score_distribution": {
+    "attempt_rows": 69627,
+    "count": 69627,
+    "max": 1.0,
+    "mean": 0.4216307362431241,
+    "median": 0.307692,
+    "min": 0.0,
+    "missing_score_rows": 0,
+    "q1": 0.0,
+    "q3": 0.923077,
+    "quartile_definition": "linear empirical quantiles",
+    "standard_deviation_definition": "sample standard deviation (ddof=1)",
+    "std": 0.4281047435301455
+  },
+  "student_count": 413,
+  "total_diagnostic_count_from_attempts": 62316,
+  "transition_analysis": {
+    "attempt_rows": 69627,
+    "classifiable_transition_count": 53448,
+    "classifiable_transition_counts": {
+      "IMPROVING": 20503,
+      "REGRESSING": 7329,
+      "STAGNANT": 25616
+    },
+    "classifiable_transition_percentages": {
+      "IMPROVING": 38.36064960335279,
+      "REGRESSING": 13.71239335428828,
+      "STAGNANT": 47.92695704235893
+    },
+    "first_attempt_rows_excluded_from_transition_percentages": 16179,
+    "nonfirst_unclassifiable_rows": 0,
+    "per_student_share_statistics_use_student_as_unit": true,
+    "per_student_share_summary": [
+      {
+        "MeanStudentShare": 0.40977628866978955,
+        "MedianStudentShare": 0.40860215053763443,
+        "ProgressClassification": "IMPROVING",
+        "Q1StudentShare": 0.3399014778325123,
+        "Q3StudentShare": 0.48333333333333334,
+        "StudentsOverHalfPercent": 17.114914425427873,
+        "StudentsOverHalfTransitions": 70,
+        "StudentsWithTransitions": 409
+      },
+      {
+        "MeanStudentShare": 0.48586812669031293,
+        "MedianStudentShare": 0.47560975609756095,
+        "ProgressClassification": "STAGNANT",
+        "Q1StudentShare": 0.39603960396039606,
+        "Q3StudentShare": 0.5606060606060606,
+        "StudentsOverHalfPercent": 40.831295843520785,
+        "StudentsOverHalfTransitions": 167,
+        "StudentsWithTransitions": 409
+      },
+      {
+        "MeanStudentShare": 0.10435558463989743,
+        "MedianStudentShare": 0.10891089108910891,
+        "ProgressClassification": "REGRESSING",
+        "Q1StudentShare": 0.058823529411764705,
+        "Q3StudentShare": 0.15079365079365079,
+        "StudentsOverHalfPercent": 0.0,
+        "StudentsOverHalfTransitions": 0,
+        "StudentsWithTransitions": 409
+      }
+    ],
+    "student_count": 413,
+    "students_with_classifiable_transitions": 409,
+    "students_without_classifiable_transitions": 4
+  }
+}

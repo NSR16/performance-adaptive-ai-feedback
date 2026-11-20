@@ -1,0 +1,4 @@
+InitialScoreGroup,StudentCount,MinStudentBaseline,MaxStudentBaseline,LowerBinEdge,UpperBinEdge,LowerEdgeInclusive,UpperEdgeInclusive
+Low,138,0.0,0.361413,0.0,0.3618222333333333,True,True
+Middle,137,0.3626407,0.5735307435897435,0.3618222333333333,0.5756712395299144,False,True
+High,138,0.5767414875,1.0,0.5756712395299144,1.0,False,True

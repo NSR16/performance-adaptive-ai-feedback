@@ -1,0 +1,3 @@
+CompileResult,AttemptCount,AttemptDenominator,AttemptPercent,DiagnosticEventCount
+Success,41569,69627,59.702414293305765,0
+Error,28058,69627,40.29758570669424,62316
