@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import timedelta
 from decimal import Decimal
 
 import pytest
@@ -12,12 +13,14 @@ from sqlalchemy.pool import StaticPool
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
-from app.models.orm import Problem, Student, TestCase
+from app.models.orm import Problem, Student, Submission, TestCase
 from app.services.evaluation.schemas import (
     EvaluationResult,
     TestCaseResult as EvaluationTestCaseResult,
 )
+from app.services.evaluation.engine import EvaluationEngine
 from app.services.feedback import FeedbackGenerationResult
+from app.services.evaluation.java_runner import JavaRunner, ProcessResult
 from app.services.submissions import SubmissionWorkflow
 from app.api.routes.submissions import get_submission_workflow
 from scripts.seed_demo import seed_demo_data
@@ -299,7 +302,7 @@ def test_first_submission_is_baseline_and_persists_data(api_database) -> None:
         },
     ]
     assert body["progress_classification"] is None
-    assert body["selected_assistance_level"] == "MODERATE"
+    assert body["selected_assistance_level"] == "LOW"
     assert body["feedback_text"] == "Mock grounded hint"
     assert body["generation_status"] == "SUCCEEDED"
 
@@ -317,12 +320,12 @@ def test_first_submission_is_baseline_and_persists_data(api_database) -> None:
 
     with TestingSession() as db:
         state = db.query(StudentProblemState).one()
-        assert state.current_assistance == "MODERATE"
+        assert state.current_assistance == "LOW"
         assert state.consecutive_improvements == 0
         assert db.query(Feedback).count() == 1
 
 
-def test_second_submission_improves_then_fsm_reduces_assistance(api_database) -> None:
+def test_improving_submissions_keep_new_student_problem_state_low(api_database) -> None:
     client, TestingSession = api_database
 
     first = client.post(
@@ -333,23 +336,118 @@ def test_second_submission_improves_then_fsm_reduces_assistance(api_database) ->
         "/api/submissions",
         json={"student_id": 1, "problem_id": 1, "source_code": "score65"},
     ).json()
-    third = client.post(
-        "/api/submissions",
-        json={"student_id": 1, "problem_id": 1, "source_code": "score85"},
-    ).json()
 
     assert first["progress_classification"] is None
+    assert first["selected_assistance_level"] == "LOW"
     assert second["progress_classification"] == "IMPROVING"
-    assert second["selected_assistance_level"] == "MODERATE"
-    assert third["progress_classification"] == "IMPROVING"
-    assert third["selected_assistance_level"] == "LOW"
+    assert second["selected_assistance_level"] == "LOW"
 
     from app.models.orm import StudentProblemState
 
     with TestingSession() as db:
         state = db.query(StudentProblemState).one()
+        assert state.current_assistance == "LOW"
+        assert state.consecutive_improvements == 1
+
+    third = client.post(
+        "/api/submissions",
+        json={"student_id": 1, "problem_id": 1, "source_code": "score85"},
+    ).json()
+
+    assert third["progress_classification"] == "IMPROVING"
+    assert third["selected_assistance_level"] == "LOW"
+
+    with TestingSession() as db:
+        state = db.query(StudentProblemState).one()
         assert state.consecutive_improvements == 2
         assert state.current_assistance == "LOW"
+
+
+def test_stagnant_second_submission_increases_low_assistance(api_database) -> None:
+    client, TestingSession = api_database
+
+    first = client.post(
+        "/api/submissions",
+        json={"student_id": 1, "problem_id": 1, "source_code": "score40"},
+    ).json()
+    second = client.post(
+        "/api/submissions",
+        json={"student_id": 1, "problem_id": 1, "source_code": "score40"},
+    ).json()
+
+    assert first["progress_classification"] is None
+    assert first["selected_assistance_level"] == "LOW"
+    assert second["progress_classification"] == "STAGNANT"
+    assert second["selected_assistance_level"] == "MODERATE"
+
+    from app.models.orm import StudentProblemState
+
+    with TestingSession() as db:
+        state = db.query(StudentProblemState).one()
+        assert state.current_assistance == "MODERATE"
+        assert state.consecutive_improvements == 0
+
+
+def test_student_problem_states_are_independent_and_restored(api_database) -> None:
+    client, TestingSession = api_database
+    with TestingSession() as db:
+        db.add(
+            Problem(
+                id=2,
+                title="Second Problem",
+                description="A second problem for the same student.",
+                difficulty="EASY",
+            )
+        )
+        db.flush()
+        db.add(
+            TestCase(
+                problem_id=2,
+                input_data="1 2\n",
+                expected_output="3",
+                is_hidden=False,
+                sequence_order=1,
+            )
+        )
+        db.commit()
+
+    first_problem_first = client.post(
+        "/api/submissions",
+        json={"student_id": 1, "problem_id": 1, "source_code": "score65"},
+    ).json()
+    first_problem_second = client.post(
+        "/api/submissions",
+        json={"student_id": 1, "problem_id": 1, "source_code": "score40"},
+    ).json()
+    second_problem_first = client.post(
+        "/api/submissions",
+        json={"student_id": 1, "problem_id": 2, "source_code": "score65"},
+    ).json()
+    first_problem_return = client.post(
+        "/api/submissions",
+        json={"student_id": 1, "problem_id": 1, "source_code": "score40"},
+    ).json()
+
+    assert first_problem_first["progress_classification"] is None
+    assert first_problem_first["selected_assistance_level"] == "LOW"
+    assert first_problem_second["progress_classification"] == "REGRESSING"
+    assert first_problem_second["selected_assistance_level"] == "HIGH"
+    assert second_problem_first["progress_classification"] is None
+    assert second_problem_first["selected_assistance_level"] == "LOW"
+    assert first_problem_return["progress_classification"] == "STAGNANT"
+    assert first_problem_return["selected_assistance_level"] == "HIGH"
+
+    from app.models.orm import StudentProblemState
+
+    with TestingSession() as db:
+        states = {
+            state.problem_id: state
+            for state in db.query(StudentProblemState).all()
+        }
+    assert states[1].current_assistance == "HIGH"
+    assert states[1].consecutive_improvements == 0
+    assert states[2].current_assistance == "LOW"
+    assert states[2].consecutive_improvements == 0
 
 
 def test_student_history_and_adaptive_state_are_isolated(api_database) -> None:
@@ -358,34 +456,136 @@ def test_student_history_and_adaptive_state_are_isolated(api_database) -> None:
         db.add(Student(id=2, display_name="Second Demo Student"))
         db.commit()
 
-    for score in ("score40", "score65", "score85"):
+    def submit(student_id: int, source_code: str) -> dict:
         response = client.post(
             "/api/submissions",
-            json={"student_id": 1, "problem_id": 1, "source_code": score},
+            json={
+                "student_id": student_id,
+                "problem_id": 1,
+                "source_code": source_code,
+            },
         )
         assert response.status_code == 200
-    second_student_response = client.post(
-        "/api/submissions",
-        json={"student_id": 2, "problem_id": 1, "source_code": "score65"},
-    )
+        return response.json()
 
-    assert second_student_response.status_code == 200
-    assert second_student_response.json()["progress_classification"] is None
-    assert second_student_response.json()["selected_assistance_level"] == "MODERATE"
-    assert len(client.get("/api/students/1/problems/1/history").json()) == 3
-    assert len(client.get("/api/students/2/problems/1/history").json()) == 1
+    student_one_first = submit(1, "score40")
+    student_one_stagnant = submit(1, "score40")
+    assert student_one_first["progress_classification"] is None
+    assert student_one_first["selected_assistance_level"] == "LOW"
+    assert student_one_stagnant["progress_classification"] == "STAGNANT"
+    assert student_one_stagnant["selected_assistance_level"] == "MODERATE"
 
     from app.models.orm import StudentProblemState
 
     with TestingSession() as db:
+        student_one_state = db.query(StudentProblemState).filter_by(student_id=1).one()
+        assert student_one_state.current_assistance == "MODERATE"
+        assert student_one_state.consecutive_improvements == 0
+
+    student_two_first = submit(2, "score40")
+    student_two_second = submit(2, "score65")
+    assert student_two_first["progress_classification"] is None
+    assert student_two_first["selected_assistance_level"] == "LOW"
+    assert student_two_second["progress_classification"] == "IMPROVING"
+    assert student_two_second["selected_assistance_level"] == "LOW"
+
+    with TestingSession() as db:
         states = {
-            state.student_id: state
+            state.student_id: (state.current_assistance, state.consecutive_improvements)
             for state in db.query(StudentProblemState).all()
         }
-    assert states[1].current_assistance == "LOW"
-    assert states[1].consecutive_improvements == 2
-    assert states[2].current_assistance == "MODERATE"
-    assert states[2].consecutive_improvements == 0
+    assert states == {1: ("MODERATE", 0), 2: ("LOW", 1)}
+
+    student_one_third = submit(1, "score65")
+    assert student_one_third["progress_classification"] == "IMPROVING"
+    assert student_one_third["selected_assistance_level"] == "MODERATE"
+    with TestingSession() as db:
+        states = {
+            state.student_id: (state.current_assistance, state.consecutive_improvements)
+            for state in db.query(StudentProblemState).all()
+        }
+    assert states == {1: ("MODERATE", 1), 2: ("LOW", 1)}
+
+    student_two_third = submit(2, "score85")
+    assert student_two_third["progress_classification"] == "IMPROVING"
+    assert student_two_third["selected_assistance_level"] == "LOW"
+    with TestingSession() as db:
+        states = {
+            state.student_id: (state.current_assistance, state.consecutive_improvements)
+            for state in db.query(StudentProblemState).all()
+        }
+    assert states == {1: ("MODERATE", 1), 2: ("LOW", 2)}
+
+    student_one_history = client.get("/api/students/1/problems/1/history").json()
+    student_two_history = client.get("/api/students/2/problems/1/history").json()
+    assert {
+        item["submission_id"] for item in student_one_history
+    } == {
+        student_one_first["submission_id"],
+        student_one_stagnant["submission_id"],
+        student_one_third["submission_id"],
+    }
+    assert {
+        item["submission_id"] for item in student_two_history
+    } == {
+        student_two_first["submission_id"],
+        student_two_second["submission_id"],
+        student_two_third["submission_id"],
+    }
+
+
+@pytest.mark.parametrize(
+    ("assistance", "streak"),
+    [
+        ("MODERATE", 1),
+        ("HIGH", 1),
+    ],
+)
+def test_existing_student_problem_state_is_not_overwritten(
+    api_database,
+    assistance: str,
+    streak: int,
+) -> None:
+    client, TestingSession = api_database
+
+    from app.models.orm import StudentProblemState
+
+    with TestingSession() as db:
+        db.add(
+            StudentProblemState(
+                student_id=1,
+                problem_id=1,
+                current_assistance=assistance,
+                consecutive_improvements=streak,
+            )
+        )
+        db.commit()
+
+    response = client.post(
+        "/api/submissions",
+        json={"student_id": 1, "problem_id": 1, "source_code": "score40"},
+    ).json()
+
+    assert response["progress_classification"] is None
+    assert response["selected_assistance_level"] == assistance
+    with TestingSession() as db:
+        state = db.query(StudentProblemState).one()
+        assert state.current_assistance == assistance
+        assert state.consecutive_improvements == streak
+
+
+def test_database_default_for_student_problem_state_is_low(api_database) -> None:
+    _, TestingSession = api_database
+
+    from app.models.orm import StudentProblemState
+
+    with TestingSession() as db:
+        db.add(StudentProblemState(student_id=1, problem_id=1))
+        db.commit()
+        state = db.query(StudentProblemState).one()
+
+    assert state.current_assistance == "LOW"
+    assert state.consecutive_improvements == 0
 
 
 def test_ollama_failure_preserves_evaluation_and_adaptive_data(api_database) -> None:
@@ -463,6 +663,224 @@ def test_evaluation_infrastructure_exception_is_api_error(api_database) -> None:
     )
     assert response.status_code == 500
     assert "Evaluation infrastructure failed" in response.json()["detail"]
+
+
+def test_internal_evaluation_error_does_not_change_adaptive_state(
+    api_database,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, TestingSession = api_database
+    first = client.post(
+        "/api/submissions",
+        json={"student_id": 1, "problem_id": 1, "source_code": "score40"},
+    ).json()
+
+    from app.models.orm import StudentProblemState
+
+    with TestingSession() as db:
+        state = db.query(StudentProblemState).one()
+        state.current_assistance = "MODERATE"
+        state.consecutive_improvements = 1
+        db.commit()
+
+    runner = JavaRunner()
+    monkeypatch.setattr(
+        runner,
+        "compile",
+        lambda source_code, work_dir, class_name: ProcessResult(0, "", "", 0),
+    )
+    executions = 0
+
+    def fail_second_execution(
+        work_dir: object,
+        class_name: str,
+        input_data: str,
+        timeout: float,
+    ) -> ProcessResult:
+        nonlocal executions
+        executions += 1
+        if executions == 2:
+            raise OSError("runtime unavailable")
+        return ProcessResult(0, "3\n", "", 10)
+
+    monkeypatch.setattr(runner, "execute", fail_second_execution)
+
+    def override_internal_error_workflow():
+        db = TestingSession()
+        try:
+            yield SubmissionWorkflow(
+                db=db,
+                engine=EvaluationEngine(runner=runner),
+                feedback_generator=MockFeedbackGenerator(),
+            )
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_submission_workflow] = (
+        override_internal_error_workflow
+    )
+    response = client.post(
+        "/api/submissions",
+        json={"student_id": 1, "problem_id": 1, "source_code": "RUNTIME_FAILURE"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["evaluation_status"] == "INTERNAL_ERROR"
+    assert body["score"] is None
+    assert body["progress_classification"] is None
+    assert body["selected_assistance_level"] == "MODERATE"
+
+    from app.models.orm import (
+        AdaptiveDecision,
+        EvaluationResult as OrmEvaluationResult,
+        TestCaseResult as OrmTestCaseResult,
+    )
+
+    with TestingSession() as db:
+        evaluation = (
+            db.query(OrmEvaluationResult)
+            .filter(OrmEvaluationResult.submission_id == body["submission_id"])
+            .one()
+        )
+        adaptive = (
+            db.query(AdaptiveDecision)
+            .filter(AdaptiveDecision.submission_id == body["submission_id"])
+            .one()
+        )
+        results = (
+            db.query(OrmTestCaseResult)
+            .filter(OrmTestCaseResult.evaluation_id == evaluation.id)
+            .order_by(OrmTestCaseResult.id)
+            .all()
+        )
+        state = db.query(StudentProblemState).one()
+
+    assert evaluation.status == "INTERNAL_ERROR"
+    assert evaluation.score is None
+    assert evaluation.passed_tests == 1
+    assert evaluation.total_tests == 3
+    assert [result.status for result in results] == [
+        "PASSED",
+        "NOT_RUN",
+        "NOT_RUN",
+    ]
+    assert adaptive.progress_classification is None
+    assert adaptive.improvement_streak == 1
+    assert state.current_assistance == "MODERATE"
+    assert state.consecutive_improvements == 1
+
+
+def test_infrastructure_failure_is_immediate_predecessor_and_remains_in_history(
+    api_database,
+) -> None:
+    client, TestingSession = api_database
+
+    first = client.post(
+        "/api/submissions",
+        json={"student_id": 1, "problem_id": 1, "source_code": "score40"},
+    ).json()
+    failed = client.post(
+        "/api/submissions",
+        json={"student_id": 1, "problem_id": 1, "source_code": "INTERNAL_FAILURE"},
+    )
+    later = client.post(
+        "/api/submissions",
+        json={"student_id": 1, "problem_id": 1, "source_code": "score85"},
+    )
+
+    assert failed.status_code == 500
+    assert later.status_code == 200
+    assert later.json()["progress_classification"] is None
+    assert later.json()["selected_assistance_level"] == "LOW"
+
+    history = client.get("/api/students/1/problems/1/history")
+    assert history.status_code == 200
+    items = history.json()
+    assert len(items) == 3
+    assert items[0]["submission_id"] == first["submission_id"]
+    assert items[1]["evaluation_status"] is None
+    assert items[1]["score"] is None
+    assert items[1]["progress_classification"] is None
+    assert items[1]["selected_assistance_level"] is None
+    assert items[2]["progress_classification"] is None
+
+    from app.models.orm import EvaluationResult as OrmEvaluationResult, StudentProblemState
+
+    with TestingSession() as db:
+        failed_submission = db.get(Submission, items[1]["submission_id"])
+        state = db.query(StudentProblemState).one()
+        assert failed_submission is not None
+        assert failed_submission.evaluation_result is None
+        assert db.query(OrmEvaluationResult).count() == 2
+        assert state.current_assistance == "LOW"
+        assert state.consecutive_improvements == 0
+
+
+def test_submission_without_evaluation_is_not_skipped(api_database) -> None:
+    client, TestingSession = api_database
+
+    first = client.post(
+        "/api/submissions",
+        json={"student_id": 1, "problem_id": 1, "source_code": "score40"},
+    ).json()
+
+    with TestingSession() as db:
+        first_submission = db.get(Submission, first["submission_id"])
+        assert first_submission is not None
+        pending = Submission(
+            student_id=1,
+            problem_id=1,
+            source_code="PENDING_EVALUATION",
+            submitted_at=first_submission.submitted_at + timedelta(seconds=1),
+        )
+        db.add(pending)
+        db.commit()
+        pending_id = pending.id
+
+    later = client.post(
+        "/api/submissions",
+        json={"student_id": 1, "problem_id": 1, "source_code": "score85"},
+    )
+
+    assert later.status_code == 200
+    assert later.json()["progress_classification"] is None
+    assert later.json()["selected_assistance_level"] == "LOW"
+    with TestingSession() as db:
+        pending_submission = db.get(Submission, pending_id)
+        assert pending_submission is not None
+        assert pending_submission.evaluation_result is None
+
+        from app.models.orm import StudentProblemState
+
+        state = db.query(StudentProblemState).one()
+        assert state.current_assistance == "LOW"
+        assert state.consecutive_improvements == 0
+
+
+def test_null_scored_evaluation_remains_immediate_predecessor(api_database) -> None:
+    client, _ = api_database
+
+    first = client.post(
+        "/api/submissions",
+        json={"student_id": 1, "problem_id": 1, "source_code": "score40"},
+    ).json()
+    null_score = client.post(
+        "/api/submissions",
+        json={"student_id": 1, "problem_id": 1, "source_code": "COMPILATION_ERROR"},
+    )
+    later = client.post(
+        "/api/submissions",
+        json={"student_id": 1, "problem_id": 1, "source_code": "score85"},
+    )
+
+    assert first["progress_classification"] is None
+    assert null_score.status_code == 200
+    assert null_score.json()["score"] is None
+    assert null_score.json()["progress_classification"] is None
+    assert later.status_code == 200
+    assert later.json()["progress_classification"] is None
+    assert later.json()["selected_assistance_level"] == "LOW"
 
 
 def test_history_is_chronological(api_database) -> None:

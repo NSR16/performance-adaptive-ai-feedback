@@ -12,7 +12,7 @@ class AssistanceLevel(str, Enum):
     LOW = "LOW"
 
 
-INITIAL_ASSISTANCE_LEVEL = AssistanceLevel.MODERATE
+INITIAL_ASSISTANCE_LEVEL = AssistanceLevel.LOW
 
 
 @dataclass(frozen=True)
@@ -33,6 +33,12 @@ def select_assistance(
     """Return a deterministic assistance decision without accessing persistence."""
     if previous_improvement_streak < 0:
         raise ValueError("The previous improvement streak cannot be negative.")
+    if progress_classification is not None and not isinstance(
+        progress_classification, ProgressClassification
+    ):
+        raise TypeError(
+            "The progress classification must be a ProgressClassification or None."
+        )
 
     if progress_classification is None:
         selected_assistance = previous_assistance
@@ -42,6 +48,8 @@ def select_assistance(
         selected_assistance = previous_assistance
         if updated_streak >= 2:
             selected_assistance = _improvement_transition(previous_assistance)
+            if selected_assistance is not previous_assistance:
+                updated_streak = 0
     else:
         updated_streak = 0
         selected_assistance = _transition(previous_assistance, progress_classification)
@@ -69,6 +77,8 @@ def _transition(
     classification: ProgressClassification,
 ) -> AssistanceLevel:
     if classification is ProgressClassification.STAGNANT:
+        if state is AssistanceLevel.LOW:
+            return AssistanceLevel.MODERATE
         return state
     if classification is ProgressClassification.REGRESSING:
         return AssistanceLevel.HIGH

@@ -195,7 +195,7 @@ class StudentProblemState(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     student_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("students.id"), nullable=False)
     problem_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("problems.id"), nullable=False)
-    current_assistance: Mapped[str] = mapped_column(String(10), nullable=False, server_default="MODERATE")
+    current_assistance: Mapped[str] = mapped_column(String(10), nullable=False, server_default="LOW")
     consecutive_improvements: Mapped[int] = mapped_column(nullable=False, default=0)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

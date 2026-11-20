@@ -1,0 +1,602 @@
+{
+  "run": {
+    "started_at": "2026-11-20T05:21:16.685910+00:00",
+    "status": "COMPLETED",
+    "expected_generation_count": 11,
+    "configured_model": "qwen2.5:3b",
+    "ollama_base_url": "http://localhost:11434",
+    "ollama_timeout_seconds": 60.0,
+    "generation_request": "Production generator defaults; stream=False.",
+    "completed_generation_count": 11,
+    "completed_at": "2026-11-20T05:24:45.203116+00:00",
+    "failed_generation_count": 0
+  },
+  "results": [
+    {
+      "scenario_id": "scenario_1",
+      "scenario_name": "Multi-requirement wrong answer",
+      "assistance_level": "LOW",
+      "timestamp": "2026-11-20T05:21:16.689646+00:00",
+      "duration_seconds": 29.03,
+      "model_name": "qwen2.5:3b",
+      "generation_status": "SUCCEEDED",
+      "feedback_text": "Given the evaluation results, it is not clear that the student's code is attempting to solve the problem as described. The provided code calculates the sum and difference of two integers but only prints the sum and difference, not the sum and product as required. Let's address this by ensuring the student's code computes and outputs the product of the two integers as well.\n\nConceptual hint: The student needs to modify their code to include the calculation of the product of the two integers and print it after the sum.\n\nNext steps:\n1. Ensure the student adds the computation of the product to their code.\n2. Confirm that the student's code outputs both the sum and the product in the specified order.",
+      "error_message": null,
+      "input": {
+        "scenario_id": "scenario_1",
+        "name": "Multi-requirement wrong answer",
+        "problem_description": "Read two integers and print their sum and product, in that order.",
+        "source_code": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int first = scanner.nextInt();\n        int second = scanner.nextInt();\n        int sum = first + second;\n        int difference = first - second;\n        System.out.println(sum + \" \" + difference);\n    }\n}",
+        "test_cases": [
+          {
+            "test_case_id": 1,
+            "input_data": "2 3\n",
+            "expected_output": "5 6\n"
+          },
+          {
+            "test_case_id": 2,
+            "input_data": "4 2\n",
+            "expected_output": "6 8\n"
+          }
+        ],
+        "evaluation": {
+          "status": "WRONG_ANSWER",
+          "passed_tests": 0,
+          "total_tests": 2,
+          "score": "0.00",
+          "execution_time_ms": null,
+          "compilation_error": null,
+          "runtime_error": null,
+          "internal_error": null,
+          "test_case_results": [
+            {
+              "test_case_id": 1,
+              "status": "WRONG_ANSWER",
+              "actual_output": "5 -1\n",
+              "execution_time_ms": null,
+              "error_message": null
+            },
+            {
+              "test_case_id": 2,
+              "status": "WRONG_ANSWER",
+              "actual_output": "6 2\n",
+              "execution_time_ms": null,
+              "error_message": null
+            }
+          ]
+        },
+        "expected_observations": [
+          "LOW: conceptual hint without direct correction.",
+          "MODERATE: identify the incorrect operation and guide the student.",
+          "HIGH: provide a correct implementation that preserves both outputs."
+        ]
+      }
+    },
+    {
+      "scenario_id": "scenario_1",
+      "scenario_name": "Multi-requirement wrong answer",
+      "assistance_level": "MODERATE",
+      "timestamp": "2026-11-20T05:21:45.721454+00:00",
+      "duration_seconds": 23.522,
+      "model_name": "qwen2.5:3b",
+      "generation_status": "SUCCEEDED",
+      "feedback_text": "The student code was evaluated as a **WRONG_ANSWER** with no tests passed. The evaluation indicates that the provided code does not correctly solve the problem of printing the sum and product of two integers. The student's code calculates the sum of the two integers and prints the sum followed by the difference (which is the subtraction of the second integer from the first). The correct output should be the product and sum of the two integers in that order.\n\nA hint for the student would be to modify the code to compute and print the product of the two integers immediately after printing the sum. \n\nHere is a hint:\n```java\nimport java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int first = scanner.nextInt();\n        int second = scanner.nextInt();\n        int sum = first + second;\n        int product = first * second;  // Compute product here\n        System.out.println(sum + \" \" + product);  // Print sum and product in order\n    }\n}\n```\nThis hint provides the correct logic for computing the product and printing the sum and product in the correct order.",
+      "error_message": null,
+      "input": {
+        "scenario_id": "scenario_1",
+        "name": "Multi-requirement wrong answer",
+        "problem_description": "Read two integers and print their sum and product, in that order.",
+        "source_code": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int first = scanner.nextInt();\n        int second = scanner.nextInt();\n        int sum = first + second;\n        int difference = first - second;\n        System.out.println(sum + \" \" + difference);\n    }\n}",
+        "test_cases": [
+          {
+            "test_case_id": 1,
+            "input_data": "2 3\n",
+            "expected_output": "5 6\n"
+          },
+          {
+            "test_case_id": 2,
+            "input_data": "4 2\n",
+            "expected_output": "6 8\n"
+          }
+        ],
+        "evaluation": {
+          "status": "WRONG_ANSWER",
+          "passed_tests": 0,
+          "total_tests": 2,
+          "score": "0.00",
+          "execution_time_ms": null,
+          "compilation_error": null,
+          "runtime_error": null,
+          "internal_error": null,
+          "test_case_results": [
+            {
+              "test_case_id": 1,
+              "status": "WRONG_ANSWER",
+              "actual_output": "5 -1\n",
+              "execution_time_ms": null,
+              "error_message": null
+            },
+            {
+              "test_case_id": 2,
+              "status": "WRONG_ANSWER",
+              "actual_output": "6 2\n",
+              "execution_time_ms": null,
+              "error_message": null
+            }
+          ]
+        },
+        "expected_observations": [
+          "LOW: conceptual hint without direct correction.",
+          "MODERATE: identify the incorrect operation and guide the student.",
+          "HIGH: provide a correct implementation that preserves both outputs."
+        ]
+      }
+    },
+    {
+      "scenario_id": "scenario_1",
+      "scenario_name": "Multi-requirement wrong answer",
+      "assistance_level": "HIGH",
+      "timestamp": "2026-11-20T05:22:09.245393+00:00",
+      "duration_seconds": 25.628,
+      "model_name": "qwen2.5:3b",
+      "generation_status": "SUCCEEDED",
+      "feedback_text": "The provided student code has a wrong answer status, as indicated by the evaluation summary. The code reads two integers and prints their sum and difference, in that order. However, the problem requires the sum and product of the two integers to be printed in the specified order.\n\nHere is the corrected code:\n```java\nimport java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int first = scanner.nextInt();\n        int second = scanner.nextInt();\n        int sum = first + second;\n        int product = first * second;\n        System.out.println(sum + \" \" + product);\n    }\n}\n```\n\nExplanation of the changes:\n1. Added the calculation for the product of the two integers.\n2. Changed the line `int difference = first - second;` to `int product = first * second;` as the problem requires the product instead of the difference.\n3. Adjusted the `System.out.println` statement to output the sum and product in the required order.\n\nTo ensure the solution meets the requirements, the next step is to run the corrected code against the test cases that were used to generate the evaluation summary.",
+      "error_message": null,
+      "input": {
+        "scenario_id": "scenario_1",
+        "name": "Multi-requirement wrong answer",
+        "problem_description": "Read two integers and print their sum and product, in that order.",
+        "source_code": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int first = scanner.nextInt();\n        int second = scanner.nextInt();\n        int sum = first + second;\n        int difference = first - second;\n        System.out.println(sum + \" \" + difference);\n    }\n}",
+        "test_cases": [
+          {
+            "test_case_id": 1,
+            "input_data": "2 3\n",
+            "expected_output": "5 6\n"
+          },
+          {
+            "test_case_id": 2,
+            "input_data": "4 2\n",
+            "expected_output": "6 8\n"
+          }
+        ],
+        "evaluation": {
+          "status": "WRONG_ANSWER",
+          "passed_tests": 0,
+          "total_tests": 2,
+          "score": "0.00",
+          "execution_time_ms": null,
+          "compilation_error": null,
+          "runtime_error": null,
+          "internal_error": null,
+          "test_case_results": [
+            {
+              "test_case_id": 1,
+              "status": "WRONG_ANSWER",
+              "actual_output": "5 -1\n",
+              "execution_time_ms": null,
+              "error_message": null
+            },
+            {
+              "test_case_id": 2,
+              "status": "WRONG_ANSWER",
+              "actual_output": "6 2\n",
+              "execution_time_ms": null,
+              "error_message": null
+            }
+          ]
+        },
+        "expected_observations": [
+          "LOW: conceptual hint without direct correction.",
+          "MODERATE: identify the incorrect operation and guide the student.",
+          "HIGH: provide a correct implementation that preserves both outputs."
+        ]
+      }
+    },
+    {
+      "scenario_id": "scenario_2",
+      "scenario_name": "Compilation error",
+      "assistance_level": "LOW",
+      "timestamp": "2026-11-20T05:22:34.875403+00:00",
+      "duration_seconds": 12.525,
+      "model_name": "qwen2.5:3b",
+      "generation_status": "SUCCEEDED",
+      "feedback_text": "The student's code is encountering a compilation error due to the variable `secondValue` not being defined. To resolve this, the student needs to replace `secondValue` with `second` to correctly print the sum of the two integers. Here is the corrected code:\n\n```java\nimport java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int first = scanner.nextInt();\n        int second = scanner.nextInt();\n        System.out.println(first + second);\n    }\n}\n```\n\nThe student should compile and run this corrected code.",
+      "error_message": null,
+      "input": {
+        "scenario_id": "scenario_2",
+        "name": "Compilation error",
+        "problem_description": "Read two integers from standard input and print their sum.",
+        "source_code": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int first = scanner.nextInt();\n        int second = scanner.nextInt();\n        System.out.println(first + secondValue);\n    }\n}",
+        "test_cases": [
+          {
+            "test_case_id": 1,
+            "input_data": "2 3\n",
+            "expected_output": "5\n"
+          }
+        ],
+        "evaluation": {
+          "status": "COMPILATION_ERROR",
+          "passed_tests": 0,
+          "total_tests": 0,
+          "score": null,
+          "execution_time_ms": 0,
+          "compilation_error": "cannot find symbol: variable secondValue",
+          "runtime_error": null,
+          "internal_error": null,
+          "test_case_results": [
+            {
+              "test_case_id": 1,
+              "status": "NOT_RUN",
+              "actual_output": null,
+              "execution_time_ms": null,
+              "error_message": null
+            }
+          ]
+        },
+        "expected_observations": [
+          "LOW: hint about using the declared input variable.",
+          "MODERATE: explain the undefined-variable issue without replacement code.",
+          "HIGH: correct the compilation error and preserve the complete sum task."
+        ]
+      }
+    },
+    {
+      "scenario_id": "scenario_2",
+      "scenario_name": "Compilation error",
+      "assistance_level": "MODERATE",
+      "timestamp": "2026-11-20T05:22:47.402093+00:00",
+      "duration_seconds": 12.091,
+      "model_name": "qwen2.5:3b",
+      "generation_status": "SUCCEEDED",
+      "feedback_text": "Supplied code contains a compilation error due to the variable \"secondValue\" not being defined. The student should replace \"secondValue\" with \"second\" to fix the error. Here is a corrected version of the code:\n\n```java\nimport java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int first = scanner.nextInt();\n        int second = scanner.nextInt();\n        System.out.println(first + second);\n    }\n}\n```\n\nAfter making this correction, the code should compile and run correctly.",
+      "error_message": null,
+      "input": {
+        "scenario_id": "scenario_2",
+        "name": "Compilation error",
+        "problem_description": "Read two integers from standard input and print their sum.",
+        "source_code": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int first = scanner.nextInt();\n        int second = scanner.nextInt();\n        System.out.println(first + secondValue);\n    }\n}",
+        "test_cases": [
+          {
+            "test_case_id": 1,
+            "input_data": "2 3\n",
+            "expected_output": "5\n"
+          }
+        ],
+        "evaluation": {
+          "status": "COMPILATION_ERROR",
+          "passed_tests": 0,
+          "total_tests": 0,
+          "score": null,
+          "execution_time_ms": 0,
+          "compilation_error": "cannot find symbol: variable secondValue",
+          "runtime_error": null,
+          "internal_error": null,
+          "test_case_results": [
+            {
+              "test_case_id": 1,
+              "status": "NOT_RUN",
+              "actual_output": null,
+              "execution_time_ms": null,
+              "error_message": null
+            }
+          ]
+        },
+        "expected_observations": [
+          "LOW: hint about using the declared input variable.",
+          "MODERATE: explain the undefined-variable issue without replacement code.",
+          "HIGH: correct the compilation error and preserve the complete sum task."
+        ]
+      }
+    },
+    {
+      "scenario_id": "scenario_2",
+      "scenario_name": "Compilation error",
+      "assistance_level": "HIGH",
+      "timestamp": "2026-11-20T05:22:59.496165+00:00",
+      "duration_seconds": 18.818,
+      "model_name": "qwen2.5:3b",
+      "generation_status": "SUCCEEDED",
+      "feedback_text": "The student code is encountering a compilation error due to the undefined variable `secondValue` in the line `System.out.println(first + secondValue);`. The variable `secondValue` should be `second` instead. \n\nHere is the corrected Java code:\n\n```java\nimport java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int first = scanner.nextInt();\n        int second = scanner.nextInt();\n        System.out.println(first + second);\n    }\n}\n```\n\nExplanation:\n- The `secondValue` variable is undefined and should be `second` as the second integer input from the user is stored in this variable.\n- The line `System.out.println(first + secondValue);` has been corrected to `System.out.println(first + second);` to print the sum of the two integers.\n\nTo proceed, the student should compile and run the code to ensure it works as expected.",
+      "error_message": null,
+      "input": {
+        "scenario_id": "scenario_2",
+        "name": "Compilation error",
+        "problem_description": "Read two integers from standard input and print their sum.",
+        "source_code": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int first = scanner.nextInt();\n        int second = scanner.nextInt();\n        System.out.println(first + secondValue);\n    }\n}",
+        "test_cases": [
+          {
+            "test_case_id": 1,
+            "input_data": "2 3\n",
+            "expected_output": "5\n"
+          }
+        ],
+        "evaluation": {
+          "status": "COMPILATION_ERROR",
+          "passed_tests": 0,
+          "total_tests": 0,
+          "score": null,
+          "execution_time_ms": 0,
+          "compilation_error": "cannot find symbol: variable secondValue",
+          "runtime_error": null,
+          "internal_error": null,
+          "test_case_results": [
+            {
+              "test_case_id": 1,
+              "status": "NOT_RUN",
+              "actual_output": null,
+              "execution_time_ms": null,
+              "error_message": null
+            }
+          ]
+        },
+        "expected_observations": [
+          "LOW: hint about using the declared input variable.",
+          "MODERATE: explain the undefined-variable issue without replacement code.",
+          "HIGH: correct the compilation error and preserve the complete sum task."
+        ]
+      }
+    },
+    {
+      "scenario_id": "scenario_3",
+      "scenario_name": "Runtime error",
+      "assistance_level": "LOW",
+      "timestamp": "2026-11-20T05:23:18.316604+00:00",
+      "duration_seconds": 23.92,
+      "model_name": "qwen2.5:3b",
+      "generation_status": "SUCCEEDED",
+      "feedback_text": "Given the runtime error reported in the evaluation, it indicates that there might be an issue with the logic or handling of the input value in the student's code. Specifically, attempting to divide by zero in the line `int reciprocal = 1 / value;` would result in a runtime error. This error can be prevented by adding a check to handle the case where the input value is zero.\n\nLet's consider a simple modification to the code to avoid this issue. Here's the suggested approach:\n\n1. Read the integer input.\n2. Check if the value is zero. If it is, print 'undefined'.\n3. If the value is not zero, calculate and print the reciprocal.\n\nHere's the adjusted code with these changes:\n\n```java\nimport java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int value = scanner.nextInt();\n        \n        if (value == 0) {\n            System.out.println(\"undefined\");\n        } else {\n            int reciprocal = 1 / value;\n            System.out.println(reciprocal);\n        }\n    }\n}\n```\n\nLet's test this adjusted version to see if it handles the edge case of zero correctly and ensures that division by a non-zero value produces the correct reciprocal value.",
+      "error_message": null,
+      "input": {
+        "scenario_id": "scenario_3",
+        "name": "Runtime error",
+        "problem_description": "Read an integer and print its reciprocal. If the input is zero, print 'undefined'.",
+        "source_code": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int value = scanner.nextInt();\n        int reciprocal = 1 / value;\n        System.out.println(reciprocal);\n    }\n}",
+        "test_cases": [
+          {
+            "test_case_id": 1,
+            "input_data": "0\n",
+            "expected_output": "undefined\n"
+          }
+        ],
+        "evaluation": {
+          "status": "RUNTIME_ERROR",
+          "passed_tests": 0,
+          "total_tests": 1,
+          "score": "0.00",
+          "execution_time_ms": 1,
+          "compilation_error": null,
+          "runtime_error": "java.lang.ArithmeticException: / by zero",
+          "internal_error": null,
+          "test_case_results": [
+            {
+              "test_case_id": 1,
+              "status": "RUNTIME_ERROR",
+              "actual_output": "",
+              "execution_time_ms": 1,
+              "error_message": "java.lang.ArithmeticException: / by zero"
+            }
+          ]
+        },
+        "expected_observations": [
+          "LOW: conceptual guidance about the operation.",
+          "MODERATE: explain the runtime issue and suggest handling the zero case.",
+          "HIGH: provide a suitable correction without changing the stated requirements."
+        ]
+      }
+    },
+    {
+      "scenario_id": "scenario_3",
+      "scenario_name": "Runtime error",
+      "assistance_level": "MODERATE",
+      "timestamp": "2026-11-20T05:23:42.239353+00:00",
+      "duration_seconds": 22.96,
+      "model_name": "qwen2.5:3b",
+      "generation_status": "SUCCEEDED",
+      "feedback_text": "The student code encountered a runtime error when trying to calculate the reciprocal of an input integer. This error likely occurs because the expression `1 / value` results in an integer division when `value` is zero or a negative number. In Java, when using integer division with a negative numerator, the result is negative and not a floating-point number, which causes unexpected behavior or errors.\n\nA possible solution is to use floating-point division by casting one of the operands to `float` or `double`. Here is a suggestion for the student to reconsider:\n\n```java\nimport java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int value = scanner.nextInt();\n        \n        // Use double for division to handle the case when value is zero or negative\n        double reciprocal = 1.0 / value;\n        \n        if (value == 0) {\n            System.out.println(\"undefined\");\n        } else {\n            System.out.println(reciprocal);\n        }\n    }\n}\n```\n\nBy casting one of the operands to `double`, the division operation will result in a floating-point number, which is suitable for handling the reciprocal calculation and the special case when the input is zero.",
+      "error_message": null,
+      "input": {
+        "scenario_id": "scenario_3",
+        "name": "Runtime error",
+        "problem_description": "Read an integer and print its reciprocal. If the input is zero, print 'undefined'.",
+        "source_code": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int value = scanner.nextInt();\n        int reciprocal = 1 / value;\n        System.out.println(reciprocal);\n    }\n}",
+        "test_cases": [
+          {
+            "test_case_id": 1,
+            "input_data": "0\n",
+            "expected_output": "undefined\n"
+          }
+        ],
+        "evaluation": {
+          "status": "RUNTIME_ERROR",
+          "passed_tests": 0,
+          "total_tests": 1,
+          "score": "0.00",
+          "execution_time_ms": 1,
+          "compilation_error": null,
+          "runtime_error": "java.lang.ArithmeticException: / by zero",
+          "internal_error": null,
+          "test_case_results": [
+            {
+              "test_case_id": 1,
+              "status": "RUNTIME_ERROR",
+              "actual_output": "",
+              "execution_time_ms": 1,
+              "error_message": "java.lang.ArithmeticException: / by zero"
+            }
+          ]
+        },
+        "expected_observations": [
+          "LOW: conceptual guidance about the operation.",
+          "MODERATE: explain the runtime issue and suggest handling the zero case.",
+          "HIGH: provide a suitable correction without changing the stated requirements."
+        ]
+      }
+    },
+    {
+      "scenario_id": "scenario_3",
+      "scenario_name": "Runtime error",
+      "assistance_level": "HIGH",
+      "timestamp": "2026-11-20T05:24:05.202280+00:00",
+      "duration_seconds": 19.442,
+      "model_name": "qwen2.5:3b",
+      "generation_status": "SUCCEEDED",
+      "feedback_text": "The student code experiences a runtime error when the input is zero. This is because attempting to divide 1 by zero results in a runtime exception, such as an ArithmeticException. In order to handle this situation, we need to add a check to verify if the input value is zero before performing the division operation. \n\nHere is the corrected code:\n\n```java\nimport java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int value = scanner.nextInt();\n        \n        // Check if the value is zero to avoid division by zero error\n        if (value == 0) {\n            System.out.println(\"undefined\");\n        } else {\n            int reciprocal = 1 / value;\n            System.out.println(reciprocal);\n        }\n    }\n}\n```\n\nThis version of the code checks if the input value is zero and prints 'undefined' if it is. Otherwise, it calculates and prints the reciprocal of the input value.",
+      "error_message": null,
+      "input": {
+        "scenario_id": "scenario_3",
+        "name": "Runtime error",
+        "problem_description": "Read an integer and print its reciprocal. If the input is zero, print 'undefined'.",
+        "source_code": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int value = scanner.nextInt();\n        int reciprocal = 1 / value;\n        System.out.println(reciprocal);\n    }\n}",
+        "test_cases": [
+          {
+            "test_case_id": 1,
+            "input_data": "0\n",
+            "expected_output": "undefined\n"
+          }
+        ],
+        "evaluation": {
+          "status": "RUNTIME_ERROR",
+          "passed_tests": 0,
+          "total_tests": 1,
+          "score": "0.00",
+          "execution_time_ms": 1,
+          "compilation_error": null,
+          "runtime_error": "java.lang.ArithmeticException: / by zero",
+          "internal_error": null,
+          "test_case_results": [
+            {
+              "test_case_id": 1,
+              "status": "RUNTIME_ERROR",
+              "actual_output": "",
+              "execution_time_ms": 1,
+              "error_message": "java.lang.ArithmeticException: / by zero"
+            }
+          ]
+        },
+        "expected_observations": [
+          "LOW: conceptual guidance about the operation.",
+          "MODERATE: explain the runtime issue and suggest handling the zero case.",
+          "HIGH: provide a suitable correction without changing the stated requirements."
+        ]
+      }
+    },
+    {
+      "scenario_id": "scenario_4",
+      "scenario_name": "Internal infrastructure error",
+      "assistance_level": "HIGH",
+      "timestamp": "2026-11-20T05:24:24.647364+00:00",
+      "duration_seconds": 14.686,
+      "model_name": "qwen2.5:3b",
+      "generation_status": "SUCCEEDED",
+      "feedback_text": "Given the provided evaluation result of INTERNAL_ERROR, it indicates that there is an issue with the environment or the compilation process rather than a specific error in the student's code. The student's code successfully compiles and runs, but the evaluation system is experiencing an internal failure. \n\nTo ensure the environment is functioning correctly, you should restart the evaluation environment and try running the student's code again. If the issue persists, it might be due to a temporary glitch in the evaluation system, and retrying the submission could resolve the problem. If the issue continues, it's best to contact the support team for further assistance. \n\nIn the meantime, the student's code is correct according to the problem requirements, so there are no suggested refinements.",
+      "error_message": null,
+      "input": {
+        "scenario_id": "scenario_4",
+        "name": "Internal infrastructure error",
+        "problem_description": "Read two integers from standard input and print their sum.",
+        "source_code": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int first = scanner.nextInt();\n        int second = scanner.nextInt();\n        System.out.println(first + second);\n    }\n}",
+        "test_cases": [
+          {
+            "test_case_id": 1,
+            "input_data": "2 3\n",
+            "expected_output": "5\n"
+          },
+          {
+            "test_case_id": 2,
+            "input_data": "4 6\n",
+            "expected_output": "10\n"
+          }
+        ],
+        "evaluation": {
+          "status": "INTERNAL_ERROR",
+          "passed_tests": 1,
+          "total_tests": 2,
+          "score": null,
+          "execution_time_ms": 1,
+          "compilation_error": null,
+          "runtime_error": null,
+          "internal_error": "Simulated evaluator infrastructure failure.",
+          "test_case_results": [
+            {
+              "test_case_id": 1,
+              "status": "PASSED",
+              "actual_output": "5\n",
+              "execution_time_ms": 1,
+              "error_message": null
+            },
+            {
+              "test_case_id": 2,
+              "status": "NOT_RUN",
+              "actual_output": null,
+              "execution_time_ms": null,
+              "error_message": null
+            }
+          ]
+        },
+        "expected_observations": [
+          "Do not blame the student's code or invent a programming defect.",
+          "Explain that evaluation could not be completed."
+        ]
+      }
+    },
+    {
+      "scenario_id": "scenario_5",
+      "scenario_name": "Accepted submission",
+      "assistance_level": "HIGH",
+      "timestamp": "2026-11-20T05:24:39.336315+00:00",
+      "duration_seconds": 5.864,
+      "model_name": "qwen2.5:3b",
+      "generation_status": "SUCCEEDED",
+      "feedback_text": "The student code has successfully read two integers from standard input and printed their sum. The provided solution works as required and does not need any changes or refinements as per the given problem description and student code. The student's solution is already correct and meets all the requirements.",
+      "error_message": null,
+      "input": {
+        "scenario_id": "scenario_5",
+        "name": "Accepted submission",
+        "problem_description": "Read two integers from standard input and print their sum.",
+        "source_code": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int first = scanner.nextInt();\n        int second = scanner.nextInt();\n        System.out.println(first + second);\n    }\n}",
+        "test_cases": [
+          {
+            "test_case_id": 1,
+            "input_data": "2 3\n",
+            "expected_output": "5\n"
+          },
+          {
+            "test_case_id": 2,
+            "input_data": "4 6\n",
+            "expected_output": "10\n"
+          }
+        ],
+        "evaluation": {
+          "status": "ACCEPTED",
+          "passed_tests": 2,
+          "total_tests": 2,
+          "score": "100.00",
+          "execution_time_ms": 2,
+          "compilation_error": null,
+          "runtime_error": null,
+          "internal_error": null,
+          "test_case_results": [
+            {
+              "test_case_id": 1,
+              "status": "PASSED",
+              "actual_output": "5\n",
+              "execution_time_ms": 1,
+              "error_message": null
+            },
+            {
+              "test_case_id": 2,
+              "status": "PASSED",
+              "actual_output": "10\n",
+              "execution_time_ms": 1,
+              "error_message": null
+            }
+          ]
+        },
+        "expected_observations": [
+          "Acknowledge successful evaluation.",
+          "Do not invent bugs, claim the program is incorrect, or prescribe a correction."
+        ]
+      }
+    }
+  ]
+}

@@ -197,7 +197,7 @@ def _internal_failure(
         status="INTERNAL_ERROR",
         passed_tests=sum(result.status == "PASSED" for result in completed),
         total_tests=len(cases),
-        score=_score(sum(result.status == "PASSED" for result in completed), len(cases)),
+        score=None,
         execution_time_ms=execution_time_ms,
         compilation_error=None,
         runtime_error=None,

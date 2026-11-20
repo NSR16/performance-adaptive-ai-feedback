@@ -70,7 +70,7 @@ class SubmissionWorkflow:
                     422,
                 )
 
-            previous = self._get_previous_evaluated_submission(student_id, problem_id)
+            previous = self._get_previous_submission(student_id, problem_id)
             submitted_at = datetime.now(timezone.utc)
             if previous is not None:
                 previous_at = _aware(previous.submitted_at)
@@ -123,7 +123,7 @@ class SubmissionWorkflow:
 
         previous_attempt = (
             _to_progress_attempt(previous)
-            if previous is not None
+            if previous is not None and previous.evaluation_result is not None
             else None
         )
         current_attempt = ProgressAttempt(
@@ -147,7 +147,7 @@ class SubmissionWorkflow:
                 state = StudentProblemState(
                     student_id=student_id,
                     problem_id=problem_id,
-                    current_assistance=AssistanceLevel.MODERATE.value,
+                    current_assistance=AssistanceLevel.LOW.value,
                     consecutive_improvements=0,
                 )
                 self.db.add(state)
@@ -269,14 +269,13 @@ class SubmissionWorkflow:
             ],
         }
 
-    def _get_previous_evaluated_submission(
+    def _get_previous_submission(
         self,
         student_id: int,
         problem_id: int,
     ) -> Submission | None:
         return self.db.execute(
             select(Submission)
-            .join(OrmEvaluationResult, OrmEvaluationResult.submission_id == Submission.id)
             .where(
                 Submission.student_id == student_id,
                 Submission.problem_id == problem_id,

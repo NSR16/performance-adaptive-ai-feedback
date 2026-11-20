@@ -8,7 +8,7 @@ import pytest
 from app.core.config import Settings
 from app.services.evaluation.comparator import normalize_output, outputs_match
 from app.services.evaluation.engine import EvaluationEngine
-from app.services.evaluation.java_runner import JavaRunner
+from app.services.evaluation.java_runner import JavaRunner, ProcessResult
 from app.services.evaluation.schemas import TestCaseInput
 
 JAVA_AVAILABLE = shutil.which("javac") is not None and shutil.which("java") is not None
@@ -191,9 +191,54 @@ def test_infrastructure_exception_is_not_misclassified(monkeypatch: pytest.Monke
     assert result.status == "INTERNAL_ERROR"
     assert result.internal_error == "Evaluation infrastructure error: OSError."
     assert result.compilation_error is None
+    assert result.score is None
     assert result.test_case_results[0].status == "NOT_RUN"
     assert len(working_directories) == 1
     assert not working_directories[0].exists()
+
+
+def test_execution_infrastructure_failure_after_pass_keeps_results_without_score(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runner = JavaRunner(Settings())
+    monkeypatch.setattr(
+        runner,
+        "compile",
+        lambda source_code, work_dir, class_name: ProcessResult(0, "", "", 0),
+    )
+    executions = 0
+
+    def fail_second_execution(
+        work_dir: Path,
+        class_name: str,
+        input_data: str,
+        timeout: float,
+    ) -> ProcessResult:
+        nonlocal executions
+        executions += 1
+        if executions == 2:
+            raise OSError("runtime unavailable")
+        return ProcessResult(0, "ok\n", "", 10)
+
+    monkeypatch.setattr(runner, "execute", fail_second_execution)
+    result = EvaluationEngine(runner=runner).evaluate(
+        "public class Main {}",
+        [
+            TestCaseInput(1, "", "ok", False, 1),
+            TestCaseInput(2, "", "ok", False, 2),
+        ],
+    )
+
+    assert result.status == "INTERNAL_ERROR"
+    assert result.score is None
+    assert result.passed_tests == 1
+    assert result.total_tests == 2
+    assert result.internal_error == "Evaluation infrastructure error: OSError."
+    assert [case.status for case in result.test_case_results] == [
+        "PASSED",
+        "NOT_RUN",
+    ]
+    assert result.test_case_results[0].actual_output == "ok\n"
 
 
 def test_compilation_timeout_is_reported_as_time_limit_exceeded(
