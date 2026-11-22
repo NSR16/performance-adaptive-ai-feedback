@@ -92,3 +92,9 @@ class HistoryItem(BaseModel):
     score: Decimal | None
     progress_classification: str | None
     selected_assistance_level: str | None
+
+
+class HistoryResetResponse(BaseModel):
+    student_id: int
+    problem_id: int
+    deleted_submissions: int

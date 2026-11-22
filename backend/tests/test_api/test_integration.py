@@ -210,20 +210,89 @@ def test_student_list_returns_only_frontend_fields(api_database) -> None:
     ]
 
 
-def test_demo_seed_is_idempotent_and_creates_three_students(api_database) -> None:
+def test_demo_seed_is_idempotent_and_creates_demo_bank(api_database) -> None:
     _, TestingSession = api_database
 
     with TestingSession() as db:
+        existing_problem = Problem(
+            id=2,
+            title="Demo: Sum Two Integers",
+            description="Read two integers from standard input and print their sum.",
+            difficulty="EASY",
+            starter_code="public class Main {}",
+        )
+        db.add(existing_problem)
+        db.flush()
+        existing_test_cases = [
+            TestCase(
+                problem_id=existing_problem.id,
+                input_data=input_data,
+                expected_output=expected_output,
+                is_hidden=is_hidden,
+                sequence_order=sequence,
+            )
+            for input_data, expected_output, is_hidden, sequence in (
+                ("1 2\n", "3", False, 1),
+                ("10 25\n", "35", False, 2),
+                ("-4 9\n", "5", True, 3),
+                ("0 0\n", "0", True, 4),
+            )
+        ]
+        db.add_all(existing_test_cases)
+        historical_submission = Submission(
+            id=1,
+            student_id=1,
+            problem_id=existing_problem.id,
+            source_code="historical source",
+        )
+        db.add(historical_submission)
+        db.commit()
+        original_test_case_ids = [case.id for case in existing_test_cases]
+
         seed_demo_data(db)
+        after_first_problem_count = db.query(Problem).count()
+        after_first_test_case_count = db.query(TestCase).count()
         seed_demo_data(db)
 
         students = db.query(Student).order_by(Student.id).all()
+        problems = db.query(Problem).order_by(Problem.id).all()
+        test_cases = db.query(TestCase).all()
+        updated_problem = db.get(Problem, existing_problem.id)
+        retained_test_case_ids = [
+            case.id
+            for case in db.query(TestCase)
+            .filter(TestCase.problem_id == existing_problem.id)
+            .order_by(TestCase.sequence_order)
+        ]
+        retained_submission = db.get(Submission, historical_submission.id)
+        assert db.query(Problem).count() == after_first_problem_count
+        assert db.query(TestCase).count() == after_first_test_case_count
 
+    assert updated_problem is not None
+    assert updated_problem.id == existing_problem.id
+    assert "Input format:" in updated_problem.description
+    assert "Output format:" in updated_problem.description
+    assert "Constraints:" in updated_problem.description
+    assert "Example input:" in updated_problem.description
+    assert "Example output:" in updated_problem.description
+    assert retained_test_case_ids == original_test_case_ids
+    assert retained_submission is not None
+    assert retained_submission.problem_id == existing_problem.id
     assert [student.display_name for student in students] == [
         "Demo Student",
         "Demo Student 2",
         "Demo Student 3",
     ]
+    assert len(problems) >= 6
+    assert len(test_cases) >= 26
+    assert {
+        "Demo: Sum Two Integers",
+        "Even or Odd",
+        "Largest of Three Numbers",
+        "Calculate Factorial",
+        "Sum of Array Elements",
+        "Prime Number Checker",
+    }.issubset({problem.title for problem in problems})
 
 
 def test_invalid_submission_requests(api_database) -> None:
@@ -448,6 +517,72 @@ def test_student_problem_states_are_independent_and_restored(api_database) -> No
     assert states[1].consecutive_improvements == 0
     assert states[2].current_assistance == "LOW"
     assert states[2].consecutive_improvements == 0
+
+
+def test_scoped_history_reset_preserves_other_histories(api_database) -> None:
+    client, TestingSession = api_database
+    with TestingSession() as db:
+        db.add(Student(id=2, display_name="Second Demo Student"))
+        db.add(
+            Problem(
+                id=2,
+                title="Second Problem",
+                description="A second problem for scoped reset testing.",
+                difficulty="EASY",
+            )
+        )
+        db.flush()
+        db.add(
+            TestCase(
+                problem_id=2,
+                input_data="1\n",
+                expected_output="1",
+                is_hidden=False,
+                sequence_order=1,
+            )
+        )
+        db.commit()
+
+    for payload in (
+        {"student_id": 1, "problem_id": 1, "source_code": "score40"},
+        {"student_id": 1, "problem_id": 1, "source_code": "score65"},
+        {"student_id": 2, "problem_id": 1, "source_code": "score40"},
+        {"student_id": 1, "problem_id": 2, "source_code": "score40"},
+    ):
+        response = client.post("/api/submissions", json=payload)
+        assert response.status_code == 200
+
+    response = client.delete("/api/students/1/problems/1/history")
+    assert response.status_code == 200
+    assert response.json() == {
+        "student_id": 1,
+        "problem_id": 1,
+        "deleted_submissions": 2,
+    }
+
+    assert client.get("/api/students/1/problems/1/history").json() == []
+    assert len(client.get("/api/students/2/problems/1/history").json()) == 1
+    assert len(client.get("/api/students/1/problems/2/history").json()) == 1
+
+    from app.models.orm import (
+        AdaptiveDecision,
+        EvaluationResult,
+        Feedback,
+        StudentProblemState,
+        Submission,
+        TestCaseResult,
+    )
+
+    with TestingSession() as db:
+        assert db.query(Submission).filter_by(student_id=1, problem_id=1).count() == 0
+        assert db.query(StudentProblemState).filter_by(student_id=1, problem_id=1).count() == 0
+        assert db.query(Submission).filter_by(student_id=2, problem_id=1).count() == 1
+        assert db.query(Submission).filter_by(student_id=1, problem_id=2).count() == 1
+        assert db.query(StudentProblemState).count() == 2
+        assert db.query(EvaluationResult).count() == 2
+        assert db.query(TestCaseResult).count() >= 2
+        assert db.query(AdaptiveDecision).count() == 2
+        assert db.query(Feedback).count() == 2
 
 
 def test_student_history_and_adaptive_state_are_isolated(api_database) -> None:
